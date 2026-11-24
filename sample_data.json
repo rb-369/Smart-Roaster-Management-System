@@ -1,0 +1,1604 @@
+{
+  "metadata": {
+    "dataset_name": "Datastraw Smart Roster Seed Dataset",
+    "default_roster_month": "2026-12",
+    "employee_count": 32,
+    "pod_count": 4,
+    "brand_count": 20,
+    "single_resource_brand_count": 16,
+    "multi_resource_brand_count": 4,
+    "process_count": 5,
+    "assumptions": [
+      "Standard workweek is 6 working days + 1 weekly off (or 5+2 if configured); default is 1 weekly off per 7-day cycle.",
+      "Day-of-week integers follow Python convention: 0=Monday through 6=Sunday.",
+      "Hard constraints (client min_staffing on required operating days, approved leaves/comp-offs, no double-booking across incompatible shifts) always override soft preferences (preferred_weekly_off).",
+      "Employees on 365_DAYS or DAILY_EXCEPT_PH brands still receive their mandatory weekly off; uncovered days are flagged as HARD coverage gaps or filled by assigned BACKUP/floater employees.",
+      "Pod Leads (EMP-01..EMP-04) supervise pods and are excluded from routine primary queues, but appear as last-resort escalation recommendations when no associate backup is available."
+    ]
+  },
+  "processes": [
+    {
+      "id": "PROC-CS",
+      "code": "CS",
+      "name": "Customer Support",
+      "description": "Inbound ticket, chat, and call resolution"
+    },
+    {
+      "id": "PROC-ACC",
+      "code": "ACC",
+      "name": "Abandoned Cart Conversions",
+      "description": "Outbound WhatsApp/call recovery for dropped checkouts"
+    },
+    {
+      "id": "PROC-RET",
+      "code": "RET",
+      "name": "Retention",
+      "description": "Repeat-purchase outreach, subscription saves, and loyalty"
+    },
+    {
+      "id": "PROC-NDR",
+      "code": "NDR",
+      "name": "Non-Delivery Report Management",
+      "description": "Courier coordination, re-attempt scheduling, and RTO reduction"
+    },
+    {
+      "id": "PROC-ESC",
+      "code": "ESC",
+      "name": "Escalations & VIP Support",
+      "description": "Social media escalations, chargebacks, and high-value orders"
+    }
+  ],
+  "pods": [
+    {
+      "id": "POD-1",
+      "name": "Beauty & Personal Care",
+      "lead_employee_id": "EMP-01"
+    },
+    {
+      "id": "POD-2",
+      "name": "Apparel & Footwear",
+      "lead_employee_id": "EMP-02"
+    },
+    {
+      "id": "POD-3",
+      "name": "Health & Wellness",
+      "lead_employee_id": "EMP-03"
+    },
+    {
+      "id": "POD-4",
+      "name": "Home & Electronics",
+      "lead_employee_id": "EMP-04"
+    }
+  ],
+  "employees": [
+    {
+      "id": "EMP-01",
+      "name": "Ananya Sharma",
+      "email": "ananya.sharma@cxops.in",
+      "role": "POD_LEAD",
+      "pod_id": "POD-1",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC",
+        "PROC-RET",
+        "PROC-NDR",
+        "PROC-ESC"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-02",
+      "name": "Rohan Deshmukh",
+      "email": "rohan.deshmukh@cxops.in",
+      "role": "POD_LEAD",
+      "pod_id": "POD-2",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC",
+        "PROC-RET",
+        "PROC-NDR",
+        "PROC-ESC"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-03",
+      "name": "Priya Nair",
+      "email": "priya.nair@cxops.in",
+      "role": "POD_LEAD",
+      "pod_id": "POD-3",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC",
+        "PROC-RET",
+        "PROC-NDR",
+        "PROC-ESC"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-04",
+      "name": "Vikram Mehta",
+      "email": "vikram.mehta@cxops.in",
+      "role": "POD_LEAD",
+      "pod_id": "POD-4",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC",
+        "PROC-RET",
+        "PROC-NDR",
+        "PROC-ESC"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-05",
+      "name": "Sneha Kulkarni",
+      "email": "sneha.k@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-1",
+      "skills": [
+        "PROC-CS",
+        "PROC-NDR"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-06",
+      "name": "Aarav Joshi",
+      "email": "aarav.j@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-1",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC"
+      ],
+      "default_weekly_off": 2,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "ROTATIONAL",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-07",
+      "name": "Meera Iyer",
+      "email": "meera.i@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-1",
+      "skills": [
+        "PROC-CS",
+        "PROC-RET",
+        "PROC-NDR"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-08",
+      "name": "Kabir Verma",
+      "email": "kabir.v@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-1",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC",
+        "PROC-NDR"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-09",
+      "name": "Diya Patel",
+      "email": "diya.p@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-1",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC"
+      ],
+      "default_weekly_off": 1,
+      "preferred_weekly_off": 1,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-10",
+      "name": "Siddharth Rao",
+      "email": "siddharth.r@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-1",
+      "skills": [
+        "PROC-ACC",
+        "PROC-CS"
+      ],
+      "default_weekly_off": 3,
+      "preferred_weekly_off": 3,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_10_19",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-11",
+      "name": "Neha Kapoor",
+      "email": "neha.k@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-1",
+      "skills": [
+        "PROC-NDR",
+        "PROC-CS"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-12",
+      "name": "Arjun Malhotra",
+      "email": "arjun.m@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-2",
+      "skills": [
+        "PROC-CS",
+        "PROC-NDR"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-13",
+      "name": "Pooja Shetty",
+      "email": "pooja.s@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-2",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC"
+      ],
+      "default_weekly_off": 1,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "ROTATIONAL",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-14",
+      "name": "Nikhil Bansal",
+      "email": "nikhil.b@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-2",
+      "skills": [
+        "PROC-CS",
+        "PROC-RET"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-15",
+      "name": "Riya Chatterjee",
+      "email": "riya.c@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-2",
+      "skills": [
+        "PROC-CS",
+        "PROC-NDR",
+        "PROC-ACC"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 5,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-16",
+      "name": "Karan Gill",
+      "email": "karan.g@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-2",
+      "skills": [
+        "PROC-CS",
+        "PROC-ESC"
+      ],
+      "default_weekly_off": 1,
+      "preferred_weekly_off": 1,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-17",
+      "name": "Tanvi Gokhale",
+      "email": "tanvi.g@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-2",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC"
+      ],
+      "default_weekly_off": 3,
+      "preferred_weekly_off": 3,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_10_19",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-18",
+      "name": "Devansh Tiwari",
+      "email": "devansh.t@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-2",
+      "skills": [
+        "PROC-NDR",
+        "PROC-CS"
+      ],
+      "default_weekly_off": 4,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-19",
+      "name": "Ishita Bose",
+      "email": "ishita.b@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-3",
+      "skills": [
+        "PROC-CS",
+        "PROC-RET"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-20",
+      "name": "Harshvardhan Patil",
+      "email": "harsh.p@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-3",
+      "skills": [
+        "PROC-CS",
+        "PROC-NDR"
+      ],
+      "default_weekly_off": 2,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "ROTATIONAL",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-21",
+      "name": "Aisha Khan",
+      "email": "aisha.k@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-3",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC",
+        "PROC-RET"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-22",
+      "name": "Manish Agarwal",
+      "email": "manish.a@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-3",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC",
+        "PROC-NDR",
+        "PROC-RET"
+      ],
+      "default_weekly_off": 4,
+      "preferred_weekly_off": 4,
+      "weekly_off_rule": "ROTATIONAL",
+      "shift": "DAY_9_18",
+      "is_floater": true,
+      "active": true
+    },
+    {
+      "id": "EMP-23",
+      "name": "Shruti Menon",
+      "email": "shruti.m@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-3",
+      "skills": [
+        "PROC-CS",
+        "PROC-ESC"
+      ],
+      "default_weekly_off": 5,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-24",
+      "name": "Pranav Sawant",
+      "email": "pranav.s@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-3",
+      "skills": [
+        "PROC-CS",
+        "PROC-NDR"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_10_19",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-25",
+      "name": "Nandini Reddy",
+      "email": "nandini.r@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-3",
+      "skills": [
+        "PROC-RET",
+        "PROC-ACC"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-26",
+      "name": "Yashwant Kulkarni",
+      "email": "yashwant.k@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-4",
+      "skills": [
+        "PROC-CS",
+        "PROC-NDR"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-27",
+      "name": "Aditi Deshpande",
+      "email": "aditi.d@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-4",
+      "skills": [
+        "PROC-CS",
+        "PROC-ESC"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-28",
+      "name": "Varun Saxena",
+      "email": "varun.s@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-4",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC"
+      ],
+      "default_weekly_off": 2,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "ROTATIONAL",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-29",
+      "name": "Sakshi Choudhary",
+      "email": "sakshi.c@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-4",
+      "skills": [
+        "PROC-CS",
+        "PROC-NDR",
+        "PROC-RET"
+      ],
+      "default_weekly_off": 6,
+      "preferred_weekly_off": 6,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-30",
+      "name": "Omkar Bhosale",
+      "email": "omkar.b@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-4",
+      "skills": [
+        "PROC-CS",
+        "PROC-ACC",
+        "PROC-NDR",
+        "PROC-ESC"
+      ],
+      "default_weekly_off": 3,
+      "preferred_weekly_off": 3,
+      "weekly_off_rule": "ROTATIONAL",
+      "shift": "DAY_9_18",
+      "is_floater": true,
+      "active": true
+    },
+    {
+      "id": "EMP-31",
+      "name": "Kriti Sinha",
+      "email": "kriti.s@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-4",
+      "skills": [
+        "PROC-CS",
+        "PROC-ESC"
+      ],
+      "default_weekly_off": 1,
+      "preferred_weekly_off": 1,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    },
+    {
+      "id": "EMP-32",
+      "name": "Raghavendra Rao",
+      "email": "raghav.r@cxops.in",
+      "role": "ASSOCIATE",
+      "pod_id": "POD-4",
+      "skills": [
+        "PROC-NDR",
+        "PROC-CS"
+      ],
+      "default_weekly_off": 4,
+      "preferred_weekly_off": 4,
+      "weekly_off_rule": "FIXED",
+      "shift": "DAY_9_18",
+      "is_floater": false,
+      "active": true
+    }
+  ],
+  "brands": [
+    {
+      "id": "BRD-01",
+      "name": "GlowBotanica",
+      "pod_id": "POD-1",
+      "tier": "STANDARD",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-02",
+      "name": "VelvetDew Skincare",
+      "pod_id": "POD-1",
+      "tier": "PRIORITY",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-03",
+      "name": "SaffronMist Beauty",
+      "pod_id": "POD-1",
+      "tier": "STANDARD",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-04",
+      "name": "PurePetal Haircare",
+      "pod_id": "POD-1",
+      "tier": "STARTER",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-05",
+      "name": "KajalCraft Cosmetics",
+      "pod_id": "POD-1",
+      "tier": "STARTER",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-06",
+      "name": "LoomVerse Apparel",
+      "pod_id": "POD-2",
+      "tier": "STANDARD",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-07",
+      "name": "UrbanKhadi Co.",
+      "pod_id": "POD-2",
+      "tier": "PRIORITY",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-08",
+      "name": "DriftDenim Studio",
+      "pod_id": "POD-2",
+      "tier": "STANDARD",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-09",
+      "name": "SoleVibe Sneakers",
+      "pod_id": "POD-2",
+      "tier": "STANDARD",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-10",
+      "name": "VedaRoot Nutrition",
+      "pod_id": "POD-3",
+      "tier": "STANDARD",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-11",
+      "name": "ZenSip Matcha",
+      "pod_id": "POD-3",
+      "tier": "PRIORITY",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-12",
+      "name": "CoreFuel Protein",
+      "pod_id": "POD-3",
+      "tier": "STANDARD",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-13",
+      "name": "CeraHome Living",
+      "pod_id": "POD-4",
+      "tier": "STANDARD",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-14",
+      "name": "PulseAudio Gear",
+      "pod_id": "POD-4",
+      "tier": "PRIORITY",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-15",
+      "name": "BrewCraft Kitchen",
+      "pod_id": "POD-4",
+      "tier": "STANDARD",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-16",
+      "name": "LumaDesk Lighting",
+      "pod_id": "POD-4",
+      "tier": "STANDARD",
+      "staffing_model": "SINGLE_RESOURCE"
+    },
+    {
+      "id": "BRD-17",
+      "name": "AuraSkin Labs",
+      "pod_id": "POD-1",
+      "tier": "ENTERPRISE",
+      "staffing_model": "MULTI_RESOURCE"
+    },
+    {
+      "id": "BRD-18",
+      "name": "StrideCraft Footwear",
+      "pod_id": "POD-2",
+      "tier": "ENTERPRISE",
+      "staffing_model": "MULTI_RESOURCE"
+    },
+    {
+      "id": "BRD-19",
+      "name": "NutraPulse India",
+      "pod_id": "POD-3",
+      "tier": "ENTERPRISE",
+      "staffing_model": "MULTI_RESOURCE"
+    },
+    {
+      "id": "BRD-20",
+      "name": "VoltNest Smart Home",
+      "pod_id": "POD-4",
+      "tier": "ENTERPRISE",
+      "staffing_model": "MULTI_RESOURCE"
+    }
+  ],
+  "brand_process_rules": [
+    {
+      "id": "BPR-01",
+      "brand_id": "BRD-01",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-02",
+      "brand_id": "BRD-01",
+      "process_id": "PROC-NDR",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-03",
+      "brand_id": "BRD-02",
+      "process_id": "PROC-CS",
+      "calendar_type": "365_DAYS",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-04",
+      "brand_id": "BRD-02",
+      "process_id": "PROC-ACC",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-05",
+      "brand_id": "BRD-03",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-06",
+      "brand_id": "BRD-03",
+      "process_id": "PROC-RET",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-07",
+      "brand_id": "BRD-04",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-08",
+      "brand_id": "BRD-04",
+      "process_id": "PROC-ACC",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-09",
+      "brand_id": "BRD-05",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-10",
+      "brand_id": "BRD-05",
+      "process_id": "PROC-NDR",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-11",
+      "brand_id": "BRD-06",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-12",
+      "brand_id": "BRD-06",
+      "process_id": "PROC-NDR",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-13",
+      "brand_id": "BRD-07",
+      "process_id": "PROC-CS",
+      "calendar_type": "DAILY_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-14",
+      "brand_id": "BRD-07",
+      "process_id": "PROC-ACC",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-15",
+      "brand_id": "BRD-08",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-16",
+      "brand_id": "BRD-08",
+      "process_id": "PROC-RET",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-17",
+      "brand_id": "BRD-09",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-18",
+      "brand_id": "BRD-09",
+      "process_id": "PROC-NDR",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-19",
+      "brand_id": "BRD-10",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-20",
+      "brand_id": "BRD-10",
+      "process_id": "PROC-RET",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-21",
+      "brand_id": "BRD-11",
+      "process_id": "PROC-CS",
+      "calendar_type": "365_DAYS",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-22",
+      "brand_id": "BRD-11",
+      "process_id": "PROC-NDR",
+      "calendar_type": "DAILY_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-23",
+      "brand_id": "BRD-12",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-24",
+      "brand_id": "BRD-12",
+      "process_id": "PROC-ACC",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-25",
+      "brand_id": "BRD-13",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-26",
+      "brand_id": "BRD-13",
+      "process_id": "PROC-NDR",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-27",
+      "brand_id": "BRD-14",
+      "process_id": "PROC-CS",
+      "calendar_type": "365_DAYS",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-28",
+      "brand_id": "BRD-14",
+      "process_id": "PROC-ESC",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-29",
+      "brand_id": "BRD-15",
+      "process_id": "PROC-CS",
+      "calendar_type": "DAILY_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-30",
+      "brand_id": "BRD-15",
+      "process_id": "PROC-ACC",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-31",
+      "brand_id": "BRD-16",
+      "process_id": "PROC-CS",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-32",
+      "brand_id": "BRD-16",
+      "process_id": "PROC-NDR",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-33",
+      "brand_id": "BRD-17",
+      "process_id": "PROC-CS",
+      "calendar_type": "365_DAYS",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-34",
+      "brand_id": "BRD-17",
+      "process_id": "PROC-ACC",
+      "calendar_type": "DAILY_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-35",
+      "brand_id": "BRD-17",
+      "process_id": "PROC-NDR",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-36",
+      "brand_id": "BRD-18",
+      "process_id": "PROC-CS",
+      "calendar_type": "365_DAYS",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {
+        "0": 2,
+        "5": 2
+      }
+    },
+    {
+      "id": "BPR-37",
+      "brand_id": "BRD-18",
+      "process_id": "PROC-NDR",
+      "calendar_type": "DAILY_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-38",
+      "brand_id": "BRD-19",
+      "process_id": "PROC-CS",
+      "calendar_type": "365_DAYS",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {
+        "0": 2,
+        "1": 2,
+        "2": 2,
+        "3": 2,
+        "4": 2
+      }
+    },
+    {
+      "id": "BPR-39",
+      "brand_id": "BRD-19",
+      "process_id": "PROC-RET",
+      "calendar_type": "MON_SAT_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-40",
+      "brand_id": "BRD-19",
+      "process_id": "PROC-ACC",
+      "calendar_type": "DAILY_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-41",
+      "brand_id": "BRD-20",
+      "process_id": "PROC-CS",
+      "calendar_type": "365_DAYS",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-42",
+      "brand_id": "BRD-20",
+      "process_id": "PROC-ESC",
+      "calendar_type": "DAILY_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    },
+    {
+      "id": "BPR-43",
+      "brand_id": "BRD-20",
+      "process_id": "PROC-NDR",
+      "calendar_type": "DAILY_EXCEPT_PH",
+      "min_staffing": 1,
+      "day_min_staffing_overrides": {}
+    }
+  ],
+  "allocations": [
+    {
+      "id": "ALC-01",
+      "employee_id": "EMP-05",
+      "brand_id": "BRD-01",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-02",
+      "employee_id": "EMP-05",
+      "brand_id": "BRD-01",
+      "process_id": "PROC-NDR",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-03",
+      "employee_id": "EMP-06",
+      "brand_id": "BRD-02",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-04",
+      "employee_id": "EMP-06",
+      "brand_id": "BRD-02",
+      "process_id": "PROC-ACC",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-05",
+      "employee_id": "EMP-07",
+      "brand_id": "BRD-03",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-06",
+      "employee_id": "EMP-07",
+      "brand_id": "BRD-03",
+      "process_id": "PROC-RET",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-07",
+      "employee_id": "EMP-08",
+      "brand_id": "BRD-04",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-08",
+      "employee_id": "EMP-08",
+      "brand_id": "BRD-04",
+      "process_id": "PROC-ACC",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-09",
+      "employee_id": "EMP-08",
+      "brand_id": "BRD-05",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-10",
+      "employee_id": "EMP-08",
+      "brand_id": "BRD-05",
+      "process_id": "PROC-NDR",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-11",
+      "employee_id": "EMP-12",
+      "brand_id": "BRD-06",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-12",
+      "employee_id": "EMP-12",
+      "brand_id": "BRD-06",
+      "process_id": "PROC-NDR",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-13",
+      "employee_id": "EMP-13",
+      "brand_id": "BRD-07",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-14",
+      "employee_id": "EMP-13",
+      "brand_id": "BRD-07",
+      "process_id": "PROC-ACC",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-15",
+      "employee_id": "EMP-14",
+      "brand_id": "BRD-08",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-16",
+      "employee_id": "EMP-14",
+      "brand_id": "BRD-08",
+      "process_id": "PROC-RET",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-17",
+      "employee_id": "EMP-15",
+      "brand_id": "BRD-09",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-18",
+      "employee_id": "EMP-15",
+      "brand_id": "BRD-09",
+      "process_id": "PROC-NDR",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-19",
+      "employee_id": "EMP-19",
+      "brand_id": "BRD-10",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-20",
+      "employee_id": "EMP-19",
+      "brand_id": "BRD-10",
+      "process_id": "PROC-RET",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-21",
+      "employee_id": "EMP-20",
+      "brand_id": "BRD-11",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-22",
+      "employee_id": "EMP-20",
+      "brand_id": "BRD-11",
+      "process_id": "PROC-NDR",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-23",
+      "employee_id": "EMP-21",
+      "brand_id": "BRD-12",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-24",
+      "employee_id": "EMP-21",
+      "brand_id": "BRD-12",
+      "process_id": "PROC-ACC",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-25",
+      "employee_id": "EMP-26",
+      "brand_id": "BRD-13",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-26",
+      "employee_id": "EMP-26",
+      "brand_id": "BRD-13",
+      "process_id": "PROC-NDR",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-27",
+      "employee_id": "EMP-27",
+      "brand_id": "BRD-14",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-28",
+      "employee_id": "EMP-27",
+      "brand_id": "BRD-14",
+      "process_id": "PROC-ESC",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-29",
+      "employee_id": "EMP-28",
+      "brand_id": "BRD-15",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-30",
+      "employee_id": "EMP-28",
+      "brand_id": "BRD-15",
+      "process_id": "PROC-ACC",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-31",
+      "employee_id": "EMP-29",
+      "brand_id": "BRD-16",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-32",
+      "employee_id": "EMP-29",
+      "brand_id": "BRD-16",
+      "process_id": "PROC-NDR",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-33",
+      "employee_id": "EMP-09",
+      "brand_id": "BRD-17",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-34",
+      "employee_id": "EMP-10",
+      "brand_id": "BRD-17",
+      "process_id": "PROC-ACC",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-35",
+      "employee_id": "EMP-11",
+      "brand_id": "BRD-17",
+      "process_id": "PROC-NDR",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-36",
+      "employee_id": "EMP-10",
+      "brand_id": "BRD-17",
+      "process_id": "PROC-CS",
+      "allocation_type": "BACKUP"
+    },
+    {
+      "id": "ALC-37",
+      "employee_id": "EMP-16",
+      "brand_id": "BRD-18",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-38",
+      "employee_id": "EMP-17",
+      "brand_id": "BRD-18",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-39",
+      "employee_id": "EMP-18",
+      "brand_id": "BRD-18",
+      "process_id": "PROC-NDR",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-40",
+      "employee_id": "EMP-18",
+      "brand_id": "BRD-18",
+      "process_id": "PROC-CS",
+      "allocation_type": "BACKUP"
+    },
+    {
+      "id": "ALC-41",
+      "employee_id": "EMP-23",
+      "brand_id": "BRD-19",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-42",
+      "employee_id": "EMP-24",
+      "brand_id": "BRD-19",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-43",
+      "employee_id": "EMP-25",
+      "brand_id": "BRD-19",
+      "process_id": "PROC-RET",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-44",
+      "employee_id": "EMP-25",
+      "brand_id": "BRD-19",
+      "process_id": "PROC-ACC",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-45",
+      "employee_id": "EMP-22",
+      "brand_id": "BRD-19",
+      "process_id": "PROC-CS",
+      "allocation_type": "BACKUP"
+    },
+    {
+      "id": "ALC-46",
+      "employee_id": "EMP-31",
+      "brand_id": "BRD-20",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-47",
+      "employee_id": "EMP-31",
+      "brand_id": "BRD-20",
+      "process_id": "PROC-ESC",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-48",
+      "employee_id": "EMP-32",
+      "brand_id": "BRD-20",
+      "process_id": "PROC-NDR",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-49",
+      "employee_id": "EMP-32",
+      "brand_id": "BRD-20",
+      "process_id": "PROC-CS",
+      "allocation_type": "PRIMARY"
+    },
+    {
+      "id": "ALC-50",
+      "employee_id": "EMP-30",
+      "brand_id": "BRD-20",
+      "process_id": "PROC-ESC",
+      "allocation_type": "BACKUP"
+    }
+  ],
+  "public_holidays": [
+    {
+      "id": "PH-2026-12-25",
+      "date": "2026-12-25",
+      "name": "Christmas Day",
+      "is_national": true
+    },
+    {
+      "id": "PH-2027-01-01",
+      "date": "2027-01-01",
+      "name": "New Year's Day",
+      "is_national": true
+    },
+    {
+      "id": "PH-2027-01-26",
+      "date": "2027-01-26",
+      "name": "Republic Day",
+      "is_national": true
+    }
+  ],
+  "leaves_and_compoffs": [
+    {
+      "id": "LV-01",
+      "employee_id": "EMP-08",
+      "start_date": "2026-12-10",
+      "end_date": "2026-12-11",
+      "type": "PLANNED_LEAVE",
+      "status": "APPROVED",
+      "reason": "Family wedding in Pune"
+    },
+    {
+      "id": "LV-02",
+      "employee_id": "EMP-06",
+      "start_date": "2026-12-18",
+      "end_date": "2026-12-18",
+      "type": "COMP_OFF",
+      "status": "APPROVED",
+      "reason": "Comp-off for working Diwali"
+    },
+    {
+      "id": "LV-03",
+      "employee_id": "EMP-16",
+      "start_date": "2026-12-14",
+      "end_date": "2026-12-15",
+      "type": "PLANNED_LEAVE",
+      "status": "APPROVED",
+      "reason": "Medical appointment & personal errand"
+    },
+    {
+      "id": "LV-04",
+      "employee_id": "EMP-24",
+      "start_date": "2026-12-21",
+      "end_date": "2026-12-22",
+      "type": "PLANNED_LEAVE",
+      "status": "APPROVED",
+      "reason": "Year-end travel"
+    },
+    {
+      "id": "LV-05",
+      "employee_id": "EMP-27",
+      "start_date": "2026-12-28",
+      "end_date": "2026-12-28",
+      "type": "COMP_OFF",
+      "status": "APPROVED",
+      "reason": "Comp-off for working Christmas Day"
+    },
+    {
+      "id": "LV-06",
+      "employee_id": "EMP-05",
+      "start_date": "2026-12-07",
+      "end_date": "2026-12-07",
+      "type": "PLANNED_LEAVE",
+      "status": "APPROVED",
+      "reason": "Personal leave"
+    },
+    {
+      "id": "LV-07",
+      "employee_id": "EMP-12",
+      "start_date": "2026-12-16",
+      "end_date": "2026-12-17",
+      "type": "PLANNED_LEAVE",
+      "status": "PENDING",
+      "reason": "Demo: Approve this leave post-generation to trigger live gap detection on BRD-06"
+    }
+  ],
+  "demo_scenarios": [
+    {
+      "id": "DEMO-1",
+      "title": "Single-Resource 365-Day Brand Weekly-Off Tension",
+      "brand_id": "BRD-02",
+      "description": "VelvetDew Skincare (BRD-02) requires 365-day CS coverage, but has only 1 primary employee (EMP-06). Every Wednesday (EMP-06's weekly off) and Dec 18 (comp-off) creates a hard coverage gap unless a backup/floater or Pod Lead covers."
+    },
+    {
+      "id": "DEMO-2",
+      "title": "Cascading Multi-Brand Gap from One Employee's Leave",
+      "brand_ids": [
+        "BRD-04",
+        "BRD-05"
+      ],
+      "description": "EMP-08 manages both PurePetal Haircare (BRD-04) and KajalCraft Cosmetics (BRD-05). Their Dec 10-11 leave creates simultaneous coverage gaps across 2 brands and 4 processes."
+    },
+    {
+      "id": "DEMO-3",
+      "title": "Multi-Resource Brand Partial Unavailability (Covered vs. Peak Gap)",
+      "brand_id": "BRD-18",
+      "description": "StrideCraft Footwear (BRD-18) has 3 employees. When EMP-16 is on leave Dec 14-15: on Tue Dec 15 (min_staffing=1), EMP-17 maintains full coverage; on Mon Dec 14 (peak day, min_staffing=2), system activates backup EMP-18 or flags insufficient staffing."
+    },
+    {
+      "id": "DEMO-4",
+      "title": "Post-Generation Live Change Workflow",
+      "leave_id": "LV-07",
+      "brand_id": "BRD-06",
+      "description": "After generating the Dec 2026 roster, approve EMP-12's pending leave (LV-07) for Dec 16-17. The system immediately flags a coverage gap on LoomVerse Apparel (BRD-06) and recommends available Pod-2 backups without regenerating the entire roster."
+    }
+  ]
+}
