@@ -171,10 +171,10 @@ export default function ManagementTabs({
               key={t.id}
               type="button"
               onClick={() => setSubTab(t.id)}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors ${
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
                 active
-                  ? "bg-neutral-900 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/15"
+                  : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -219,22 +219,32 @@ export default function ManagementTabs({
                     },
                   })
                 }
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm shadow-blue-600/15"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Pod
               </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4">
-              {pods.map((pod) => (
+              {pods.map((pod, idx) => {
+                const podThemes = [
+                  { border: "border-t-rose-500", badge: "bg-rose-50 text-rose-700 border-rose-200" },
+                  { border: "border-t-sky-500", badge: "bg-sky-50 text-sky-700 border-sky-200" },
+                  { border: "border-t-emerald-500", badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+                  { border: "border-t-amber-500", badge: "bg-amber-50 text-amber-700 border-amber-200" },
+                ];
+                const theme = podThemes[idx % podThemes.length];
+                return (
                 <div
                   key={pod.id}
-                  className="border border-neutral-200 rounded-lg p-3 bg-neutral-50/50 flex items-start justify-between gap-2"
+                  className={`border border-neutral-200 border-t-2 ${theme.border} rounded-xl p-3.5 bg-white flex items-start justify-between gap-2`}
                 >
                   <div>
-                    <div className="text-sm font-bold text-slate-900">{pod.name}</div>
-                    <div className="text-[11px] font-mono text-slate-500">{pod.id}</div>
-                    <div className="text-xs text-slate-600 mt-1">
+                    <div className="text-sm font-bold text-neutral-950">{pod.name}</div>
+                    <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border ${theme.badge}`}>
+                      {pod.id}
+                    </span>
+                    <div className="text-xs text-neutral-600 mt-1.5">
                       Lead: {empMap.get(pod.lead_employee_id)?.name || pod.lead_employee_id}
                     </div>
                   </div>
@@ -258,7 +268,8 @@ export default function ManagementTabs({
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

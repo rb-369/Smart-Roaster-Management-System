@@ -29,10 +29,10 @@ export default function KpiBar({
   return (
     <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
       {/* Total Employees */}
-      <div className="bg-white border border-neutral-200 rounded-2xl p-4 transition-colors hover:border-neutral-300">
+      <div className="bg-white border border-neutral-200 rounded-2xl p-4 transition-colors hover:border-blue-200">
         <div className="flex items-center justify-between text-neutral-500 mb-2">
           <span className="text-[11px] font-semibold uppercase tracking-wider">Team Headcount</span>
-          <span className="p-1.5 rounded-lg bg-neutral-100 text-neutral-700">
+          <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
             <Users className="w-3.5 h-3.5" />
           </span>
         </div>

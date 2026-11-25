@@ -165,13 +165,13 @@ export default function HomePage() {
   const hardConflictsCount = rosterData?.kpis?.hard_conflicts_count ?? 0;
 
   return (
-    <div className="min-h-screen bg-white text-[#0a0a0a]">
+    <div className="min-h-screen bg-[#FAFAFC] text-[#0a0a0a]">
       {/* Frosted Editorial Light Header */}
       <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-neutral-200">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 py-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Brand & Status */}
           <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-900 text-white flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-teal-500 text-white flex items-center justify-center shadow-sm shadow-blue-600/20">
               <Layers className="w-4 h-4" />
             </div>
             <div>
@@ -226,7 +226,7 @@ export default function HomePage() {
               type="button"
               onClick={handleGenerate}
               disabled={loadingRoster || resetting}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 text-white text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold shadow-sm shadow-blue-600/15 transition-colors"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingRoster ? "animate-spin" : ""}`} />
               {loadingRoster ? "Solving..." : "Generate Roster"}

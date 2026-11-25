@@ -492,7 +492,7 @@ export default function RosterViews({
                 onClick={() => setActiveView(tab.id)}
                 className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
                   active
-                    ? "bg-neutral-900 text-white"
+                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/15"
                     : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
                 }`}
               >
