@@ -155,7 +155,7 @@ export default function ManagementTabs({
   return (
     <div className="space-y-4">
       {/* Sub-tab Navigation */}
-      <div className="flex flex-wrap items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1.5 shadow-sm">
+      <div className="flex flex-wrap items-center gap-1.5 bg-white border border-neutral-200 rounded-xl p-1.5 shadow-sm">
         {(
           [
             { id: "team", label: `Team & Pods (${employees.length})`, icon: Users },
@@ -173,7 +173,7 @@ export default function ManagementTabs({
               onClick={() => setSubTab(t.id)}
               className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors ${
                 active
-                  ? "bg-indigo-600 text-white shadow-sm"
+                  ? "bg-neutral-900 text-white shadow-sm"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
@@ -202,8 +202,8 @@ export default function ManagementTabs({
       {subTab === "team" && (
         <div className="space-y-6">
           {/* Pods Section */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50 flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Operational Pods ({pods.length})
               </h3>
@@ -219,7 +219,7 @@ export default function ManagementTabs({
                     },
                   })
                 }
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Pod
@@ -229,7 +229,7 @@ export default function ManagementTabs({
               {pods.map((pod) => (
                 <div
                   key={pod.id}
-                  className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 flex items-start justify-between gap-2"
+                  className="border border-neutral-200 rounded-lg p-3 bg-neutral-50/50 flex items-start justify-between gap-2"
                 >
                   <div>
                     <div className="text-sm font-bold text-slate-900">{pod.name}</div>
@@ -242,7 +242,7 @@ export default function ManagementTabs({
                     <button
                       type="button"
                       onClick={() => setPodModal({ mode: "edit", data: { ...pod } })}
-                      className="p-1 text-slate-500 hover:text-indigo-600"
+                      className="p-1 text-slate-500 hover:text-neutral-950"
                       title="Edit Pod"
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -263,8 +263,8 @@ export default function ManagementTabs({
           </div>
 
           {/* Employees Section */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50 flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Employees ({employees.length})
               </h3>
@@ -289,7 +289,7 @@ export default function ManagementTabs({
                     },
                   })
                 }
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Employee
@@ -297,7 +297,7 @@ export default function ManagementTabs({
             </div>
             <div className="overflow-x-auto max-h-[500px]">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 text-slate-600">
+                <thead className="bg-neutral-50 border-b border-neutral-200 sticky top-0 text-slate-600">
                   <tr>
                     <th className="px-3 py-2.5 font-semibold">Employee</th>
                     <th className="px-3 py-2.5 font-semibold">Pod / Role</th>
@@ -310,7 +310,7 @@ export default function ManagementTabs({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {employees.map((emp) => (
-                    <tr key={emp.id} className="hover:bg-slate-50/70">
+                    <tr key={emp.id} className="hover:bg-neutral-50/70">
                       <td className="px-3 py-2.5">
                         <div className="font-semibold text-slate-900">{emp.name}</div>
                         <div className="text-[11px] font-mono text-slate-500">
@@ -352,7 +352,7 @@ export default function ManagementTabs({
                           <button
                             type="button"
                             onClick={() => setEmpModal({ mode: "edit", data: { ...emp } })}
-                            className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-indigo-600"
+                            className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-neutral-950"
                             title="Edit Employee"
                           >
                             <Pencil className="w-3.5 h-3.5" />
@@ -383,8 +383,8 @@ export default function ManagementTabs({
       {subTab === "brands" && (
         <div className="space-y-6">
           {/* Brands Table */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50 flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 D2C Brands ({brands.length})
               </h3>
@@ -402,7 +402,7 @@ export default function ManagementTabs({
                     },
                   })
                 }
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Brand
@@ -410,7 +410,7 @@ export default function ManagementTabs({
             </div>
             <div className="overflow-x-auto max-h-[340px]">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 text-slate-600">
+                <thead className="bg-neutral-50 border-b border-neutral-200 sticky top-0 text-slate-600">
                   <tr>
                     <th className="px-3 py-2.5 font-semibold">Brand</th>
                     <th className="px-3 py-2.5 font-semibold">Pod</th>
@@ -421,7 +421,7 @@ export default function ManagementTabs({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {brands.map((b) => (
-                    <tr key={b.id} className="hover:bg-slate-50/70">
+                    <tr key={b.id} className="hover:bg-neutral-50/70">
                       <td className="px-3 py-2">
                         <span className="font-semibold text-slate-900">{b.name}</span>{" "}
                         <span className="font-mono text-slate-500 text-[11px]">({b.id})</span>
@@ -431,7 +431,7 @@ export default function ManagementTabs({
                       </td>
                       <td className="px-3 py-2 text-slate-700">{b.tier}</td>
                       <td className="px-3 py-2">
-                        <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[11px] font-semibold">
+                        <span className="px-2 py-0.5 rounded bg-neutral-100 text-neutral-800 text-[11px] font-semibold">
                           {b.staffing_model}
                         </span>
                       </td>
@@ -439,7 +439,7 @@ export default function ManagementTabs({
                         <button
                           type="button"
                           onClick={() => setBrandModal({ mode: "edit", data: { ...b } })}
-                          className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-indigo-600"
+                          className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-neutral-950"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -462,8 +462,8 @@ export default function ManagementTabs({
           </div>
 
           {/* Operating Rules Table */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50 flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Brand-Process Operating Rules ({rules.length})
               </h3>
@@ -483,7 +483,7 @@ export default function ManagementTabs({
                     overridesText: "{}",
                   })
                 }
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Operating Rule
@@ -491,7 +491,7 @@ export default function ManagementTabs({
             </div>
             <div className="overflow-x-auto max-h-[420px]">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 text-slate-600">
+                <thead className="bg-neutral-50 border-b border-neutral-200 sticky top-0 text-slate-600">
                   <tr>
                     <th className="px-3 py-2.5 font-semibold">Brand</th>
                     <th className="px-3 py-2.5 font-semibold">Process</th>
@@ -503,11 +503,11 @@ export default function ManagementTabs({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {rules.map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50/70">
+                    <tr key={r.id} className="hover:bg-neutral-50/70">
                       <td className="px-3 py-2 font-medium text-slate-900">
                         {brandMap.get(r.brand_id)?.name || r.brand_id}
                       </td>
-                      <td className="px-3 py-2 text-indigo-700 font-semibold">
+                      <td className="px-3 py-2 text-neutral-800 font-semibold">
                         {procMap.get(r.process_id)?.code || r.process_id}
                       </td>
                       <td className="px-3 py-2">
@@ -533,7 +533,7 @@ export default function ManagementTabs({
                               overridesText: JSON.stringify(r.day_min_staffing_overrides || {}),
                             })
                           }
-                          className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-indigo-600"
+                          className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-neutral-950"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -568,14 +568,14 @@ export default function ManagementTabs({
                 `Created allocation ${id}`
               );
             }}
-            className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
+            className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
           >
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 mb-1">Employee</label>
               <select
                 value={newAlloc.employee_id}
                 onChange={(e) => setNewAlloc({ ...newAlloc, employee_id: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
               >
                 {employees.map((emp) => (
                   <option key={emp.id} value={emp.id}>
@@ -589,7 +589,7 @@ export default function ManagementTabs({
               <select
                 value={newAlloc.brand_id}
                 onChange={(e) => setNewAlloc({ ...newAlloc, brand_id: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
               >
                 {brands.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -603,7 +603,7 @@ export default function ManagementTabs({
               <select
                 value={newAlloc.process_id}
                 onChange={(e) => setNewAlloc({ ...newAlloc, process_id: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
               >
                 {processes.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -617,7 +617,7 @@ export default function ManagementTabs({
               <select
                 value={newAlloc.allocation_type}
                 onChange={(e) => setNewAlloc({ ...newAlloc, allocation_type: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
               >
                 <option value="PRIMARY">PRIMARY</option>
                 <option value="BACKUP">BACKUP</option>
@@ -626,17 +626,17 @@ export default function ManagementTabs({
             <button
               type="submit"
               disabled={busy}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Allocation
             </button>
           </form>
 
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto max-h-[500px]">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 text-slate-600">
+                <thead className="bg-neutral-50 border-b border-neutral-200 sticky top-0 text-slate-600">
                   <tr>
                     <th className="px-3 py-2.5 font-semibold">Employee</th>
                     <th className="px-3 py-2.5 font-semibold">Brand</th>
@@ -647,7 +647,7 @@ export default function ManagementTabs({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {allocations.map((a) => (
-                    <tr key={a.id} className="hover:bg-slate-50/70">
+                    <tr key={a.id} className="hover:bg-neutral-50/70">
                       <td className="px-3 py-2 font-medium text-slate-900">
                         {empMap.get(a.employee_id)?.name || a.employee_id}{" "}
                         <span className="font-mono text-slate-400 text-[11px]">({a.employee_id})</span>
@@ -655,7 +655,7 @@ export default function ManagementTabs({
                       <td className="px-3 py-2 text-slate-700">
                         {brandMap.get(a.brand_id)?.name || a.brand_id}
                       </td>
-                      <td className="px-3 py-2 text-indigo-700 font-semibold">
+                      <td className="px-3 py-2 text-neutral-800 font-semibold">
                         {procMap.get(a.process_id)?.code || a.process_id}
                       </td>
                       <td className="px-3 py-2">
@@ -701,14 +701,14 @@ export default function ManagementTabs({
                 const id = newLeave.id.trim() || `LV-${Date.now()}`;
                 runAction(() => createLeave({ ...newLeave, id }), `Added leave ${id}`);
               }}
-              className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm grid grid-cols-2 sm:grid-cols-6 gap-2.5 items-end"
+              className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm grid grid-cols-2 sm:grid-cols-6 gap-2.5 items-end"
             >
               <div className="col-span-2">
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">Employee</label>
                 <select
                   value={newLeave.employee_id}
                   onChange={(e) => setNewLeave({ ...newLeave, employee_id: e.target.value })}
-                  className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                  className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
                 >
                   {employees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
@@ -723,7 +723,7 @@ export default function ManagementTabs({
                   type="date"
                   value={newLeave.start_date}
                   onChange={(e) => setNewLeave({ ...newLeave, start_date: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                  className="w-full px-2 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
                 />
               </div>
               <div>
@@ -732,7 +732,7 @@ export default function ManagementTabs({
                   type="date"
                   value={newLeave.end_date}
                   onChange={(e) => setNewLeave({ ...newLeave, end_date: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                  className="w-full px-2 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
                 />
               </div>
               <div>
@@ -740,7 +740,7 @@ export default function ManagementTabs({
                 <select
                   value={newLeave.type}
                   onChange={(e) => setNewLeave({ ...newLeave, type: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                  className="w-full px-2 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
                 >
                   <option value="PLANNED_LEAVE">PLANNED_LEAVE</option>
                   <option value="COMP_OFF">COMP_OFF</option>
@@ -749,22 +749,22 @@ export default function ManagementTabs({
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add
               </button>
             </form>
 
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+            <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   Leaves &amp; Comp-Offs ({leaves.length})
                 </h3>
               </div>
               <div className="overflow-x-auto max-h-[420px]">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 text-slate-600">
+                  <thead className="bg-neutral-50 border-b border-neutral-200 sticky top-0 text-slate-600">
                     <tr>
                       <th className="px-3 py-2 font-semibold">ID / Employee</th>
                       <th className="px-3 py-2 font-semibold">Dates</th>
@@ -775,7 +775,7 @@ export default function ManagementTabs({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {leaves.map((lv) => (
-                      <tr key={lv.id} className="hover:bg-slate-50/70">
+                      <tr key={lv.id} className="hover:bg-neutral-50/70">
                         <td className="px-3 py-2">
                           <div className="font-semibold text-slate-900">
                             {empMap.get(lv.employee_id)?.name || lv.employee_id}
@@ -868,7 +868,7 @@ export default function ManagementTabs({
                   `Added holiday ${newHoliday.name}`
                 );
               }}
-              className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2.5"
+              className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm space-y-2.5"
             >
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Add Public Holiday
@@ -878,7 +878,7 @@ export default function ManagementTabs({
                 required
                 value={newHoliday.date}
                 onChange={(e) => setNewHoliday({ ...newHoliday, date: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
               />
               <input
                 type="text"
@@ -886,20 +886,20 @@ export default function ManagementTabs({
                 placeholder="Holiday name (e.g., Christmas Day)"
                 value={newHoliday.name}
                 onChange={(e) => setNewHoliday({ ...newHoliday, name: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
               />
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Holiday
               </button>
             </form>
 
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+            <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   Public Holidays ({holidays.length})
                 </h3>
@@ -945,7 +945,7 @@ export default function ManagementTabs({
                 `${podModal.mode === "add" ? "Created" : "Updated"} pod ${podModal.data.id}`
               ).then(() => setPodModal(null));
             }}
-            className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4"
+            className="bg-white border border-neutral-200 rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900">
@@ -966,7 +966,7 @@ export default function ManagementTabs({
                   onChange={(e) =>
                     setPodModal({ ...podModal, data: { ...podModal.data, id: e.target.value } })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 />
               </div>
               <div>
@@ -978,7 +978,7 @@ export default function ManagementTabs({
                   onChange={(e) =>
                     setPodModal({ ...podModal, data: { ...podModal.data, name: e.target.value } })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 />
               </div>
               <div>
@@ -991,7 +991,7 @@ export default function ManagementTabs({
                       data: { ...podModal.data, lead_employee_id: e.target.value },
                     })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 >
                   {employees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
@@ -1005,14 +1005,14 @@ export default function ManagementTabs({
               <button
                 type="button"
                 onClick={() => setPodModal(null)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
+                className="px-3 py-2 rounded-lg border border-neutral-200 text-xs font-semibold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold"
               >
                 {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save Pod
@@ -1036,7 +1036,7 @@ export default function ManagementTabs({
                 `${empModal.mode === "add" ? "Created" : "Updated"} employee ${empModal.data.id}`
               ).then(() => setEmpModal(null));
             }}
-            className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-lg p-5 space-y-4"
+            className="bg-white border border-neutral-200 rounded-2xl shadow-xl w-full max-w-lg p-5 space-y-4"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900">
@@ -1057,7 +1057,7 @@ export default function ManagementTabs({
                   onChange={(e) =>
                     setEmpModal({ ...empModal, data: { ...empModal.data, id: e.target.value } })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 />
               </div>
               <div>
@@ -1069,7 +1069,7 @@ export default function ManagementTabs({
                   onChange={(e) =>
                     setEmpModal({ ...empModal, data: { ...empModal.data, name: e.target.value } })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 />
               </div>
               <div>
@@ -1081,7 +1081,7 @@ export default function ManagementTabs({
                   onChange={(e) =>
                     setEmpModal({ ...empModal, data: { ...empModal.data, email: e.target.value } })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 />
               </div>
               <div>
@@ -1091,7 +1091,7 @@ export default function ManagementTabs({
                   onChange={(e) =>
                     setEmpModal({ ...empModal, data: { ...empModal.data, pod_id: e.target.value } })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 >
                   {pods.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -1110,7 +1110,7 @@ export default function ManagementTabs({
                       data: { ...empModal.data, default_weekly_off: Number(e.target.value) },
                     })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 >
                   {WEEKDAY_LABELS.map((lbl, idx) => (
                     <option key={idx} value={idx}>
@@ -1129,7 +1129,7 @@ export default function ManagementTabs({
                       data: { ...empModal.data, preferred_weekly_off: Number(e.target.value) },
                     })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 >
                   {WEEKDAY_LABELS.map((lbl, idx) => (
                     <option key={idx} value={idx}>
@@ -1145,7 +1145,7 @@ export default function ManagementTabs({
                   onChange={(e) =>
                     setEmpModal({ ...empModal, data: { ...empModal.data, role: e.target.value } })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 >
                   <option value="ASSOCIATE">ASSOCIATE</option>
                   <option value="POD_LEAD">POD_LEAD</option>
@@ -1161,7 +1161,7 @@ export default function ManagementTabs({
                       data: { ...empModal.data, weekly_off_rule: e.target.value },
                     })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 >
                   <option value="FIXED">FIXED</option>
                   <option value="ROTATIONAL">ROTATIONAL</option>
@@ -1200,14 +1200,14 @@ export default function ManagementTabs({
               <button
                 type="button"
                 onClick={() => setEmpModal(null)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
+                className="px-3 py-2 rounded-lg border border-neutral-200 text-xs font-semibold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold"
               >
                 {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save Employee
@@ -1231,7 +1231,7 @@ export default function ManagementTabs({
                 `${brandModal.mode === "add" ? "Created" : "Updated"} brand ${brandModal.data.id}`
               ).then(() => setBrandModal(null));
             }}
-            className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4"
+            className="bg-white border border-neutral-200 rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900">
@@ -1252,7 +1252,7 @@ export default function ManagementTabs({
                   onChange={(e) =>
                     setBrandModal({ ...brandModal, data: { ...brandModal.data, id: e.target.value } })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 />
               </div>
               <div>
@@ -1267,7 +1267,7 @@ export default function ManagementTabs({
                       data: { ...brandModal.data, name: e.target.value },
                     })
                   }
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -1281,7 +1281,7 @@ export default function ManagementTabs({
                         data: { ...brandModal.data, pod_id: e.target.value },
                       })
                     }
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                   >
                     {pods.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -1300,7 +1300,7 @@ export default function ManagementTabs({
                         data: { ...brandModal.data, staffing_model: e.target.value },
                       })
                     }
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                   >
                     <option value="SINGLE_RESOURCE">SINGLE_RESOURCE</option>
                     <option value="MULTI_RESOURCE">MULTI_RESOURCE</option>
@@ -1312,14 +1312,14 @@ export default function ManagementTabs({
               <button
                 type="button"
                 onClick={() => setBrandModal(null)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
+                className="px-3 py-2 rounded-lg border border-neutral-200 text-xs font-semibold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold"
               >
                 {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save Brand
@@ -1354,7 +1354,7 @@ export default function ManagementTabs({
                 `${ruleModal.mode === "add" ? "Created" : "Updated"} rule ${payload.id}`
               ).then(() => setRuleModal(null));
             }}
-            className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4"
+            className="bg-white border border-neutral-200 rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900">
@@ -1378,7 +1378,7 @@ export default function ManagementTabs({
                         data: { ...ruleModal.data, brand_id: e.target.value },
                       })
                     }
-                    className="w-full px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                    className="w-full px-2.5 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                   >
                     {brands.map((b) => (
                       <option key={b.id} value={b.id}>
@@ -1397,7 +1397,7 @@ export default function ManagementTabs({
                         data: { ...ruleModal.data, process_id: e.target.value },
                       })
                     }
-                    className="w-full px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                    className="w-full px-2.5 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                   >
                     {processes.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -1418,7 +1418,7 @@ export default function ManagementTabs({
                         data: { ...ruleModal.data, calendar_type: e.target.value },
                       })
                     }
-                    className="w-full px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                    className="w-full px-2.5 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                   >
                     <option value="365_DAYS">365_DAYS</option>
                     <option value="DAILY_EXCEPT_PH">DAILY_EXCEPT_PH</option>
@@ -1438,7 +1438,7 @@ export default function ManagementTabs({
                         data: { ...ruleModal.data, min_staffing: Number(e.target.value) },
                       })
                     }
-                    className="w-full px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50"
+                    className="w-full px-2.5 py-2 border border-neutral-200 rounded-lg bg-neutral-50"
                   />
                 </div>
               </div>
@@ -1451,7 +1451,7 @@ export default function ManagementTabs({
                   value={ruleModal.overridesText}
                   onChange={(e) => setRuleModal({ ...ruleModal, overridesText: e.target.value })}
                   placeholder='{"0": 2}'
-                  className="w-full px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono"
+                  className="w-full px-2.5 py-2 border border-neutral-200 rounded-lg bg-neutral-50 font-mono"
                 />
               </div>
             </div>
@@ -1459,14 +1459,14 @@ export default function ManagementTabs({
               <button
                 type="button"
                 onClick={() => setRuleModal(null)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
+                className="px-3 py-2 rounded-lg border border-neutral-200 text-xs font-semibold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold"
               >
                 {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save Rule

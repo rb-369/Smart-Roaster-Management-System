@@ -195,7 +195,7 @@ export default function ConflictDrawer({
         {/* Conflict List */}
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
           {filteredConflicts.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
+            <div className="bg-white border border-neutral-200 rounded-xl p-8 text-center">
               <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
               <p className="text-sm font-semibold text-slate-900">No matching conflicts</p>
               <p className="text-xs text-slate-500 mt-1">
@@ -240,7 +240,7 @@ export default function ConflictDrawer({
                   {/* Tags */}
                   <div className="flex flex-wrap items-center gap-1.5 mt-2">
                     {conf.brand_id && (
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium">
+                      <span className="text-[11px] px-2 py-0.5 rounded bg-neutral-100 text-neutral-800 font-medium">
                         {conf.brand_name ? `${conf.brand_name} (${conf.brand_id})` : conf.brand_id}
                       </span>
                     )}
@@ -262,8 +262,8 @@ export default function ConflictDrawer({
 
                   {/* Recommended Backups */}
                   {conf.suggested_resolutions && conf.suggested_resolutions.length > 0 && (
-                    <div className="mt-3.5 pt-3 border-t border-slate-100">
-                      <div className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 mb-2">
+                    <div className="mt-3.5 pt-3 border-t border-neutral-100">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-neutral-900 mb-2">
                         Resolve with Recommended Backup
                       </div>
                       <div className="space-y-2">
@@ -273,7 +273,7 @@ export default function ConflictDrawer({
                           return (
                             <div
                               key={cand.employee_id}
-                              className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-lg p-2.5"
+                              className="flex items-center justify-between gap-3 bg-neutral-50 border border-neutral-200 rounded-lg p-2.5"
                             >
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-1.5">
@@ -283,7 +283,7 @@ export default function ConflictDrawer({
                                   <span className="text-[11px] font-mono text-slate-500">
                                     {cand.employee_id}
                                   </span>
-                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 tabular-nums">
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-200 text-neutral-800 tabular-nums">
                                     Score {cand.score}
                                   </span>
                                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">

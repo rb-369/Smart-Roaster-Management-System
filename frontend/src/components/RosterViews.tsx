@@ -55,7 +55,7 @@ const STATUS_META: Record<
   WEEKLY_OFF: {
     code: "WO",
     label: "Weekly Off",
-    badgeClass: "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200",
+    badgeClass: "bg-slate-100 text-slate-600 border-neutral-200 hover:bg-slate-200",
   },
   PUBLIC_HOLIDAY: {
     code: "PH",
@@ -265,13 +265,13 @@ export default function RosterViews({
     }
 
     return (
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto max-h-[640px]">
           <table className="w-full border-collapse text-xs">
-            <thead className="sticky top-0 z-30 bg-slate-50 border-b border-slate-200">
+            <thead className="sticky top-0 z-30 bg-neutral-50 border-b border-neutral-200">
               {/* Day Header Row */}
               <tr>
-                <th className="sticky left-0 z-40 bg-slate-50 border-r border-slate-200 px-3 py-2.5 text-left font-semibold text-slate-700 min-w-[210px]">
+                <th className="sticky left-0 z-40 bg-neutral-50 border-r border-neutral-200 px-3 py-2.5 text-left font-semibold text-slate-700 min-w-[210px]">
                   Employee / Pod
                 </th>
                 {dates.map((d) => {
@@ -283,7 +283,7 @@ export default function RosterViews({
                     <th
                       key={d}
                       title={ph ? `Public Holiday: ${ph.name}` : d}
-                      className={`px-1 py-2 text-center font-semibold border-r border-slate-100 min-w-[38px] tabular-nums ${
+                      className={`px-1 py-2 text-center font-semibold border-r border-neutral-100 min-w-[38px] tabular-nums ${
                         ph
                           ? "bg-sky-50 text-sky-800"
                           : isWeekend
@@ -299,8 +299,8 @@ export default function RosterViews({
               </tr>
 
               {/* Daily Coverage Health Summary Row */}
-              <tr className="bg-white border-b border-slate-200">
-                <th className="sticky left-0 z-40 bg-white border-r border-slate-200 px-3 py-1.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <tr className="bg-white border-b border-neutral-200">
+                <th className="sticky left-0 z-40 bg-white border-r border-neutral-200 px-3 py-1.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   Daily Coverage Health
                 </th>
                 {dates.map((d) => {
@@ -308,7 +308,7 @@ export default function RosterViews({
                   return (
                     <th
                       key={`health-${d}`}
-                      className="px-1 py-1.5 text-center border-r border-slate-100 tabular-nums"
+                      className="px-1 py-1.5 text-center border-r border-neutral-100 tabular-nums"
                       title={gaps === 0 ? `${d}: All slots covered` : `${d}: ${gaps} coverage gap(s)`}
                     >
                       {gaps === 0 ? (
@@ -330,7 +330,7 @@ export default function RosterViews({
               {groups.map((grp, gIdx) => (
                 <React.Fragment key={grp.pod?.id || `grp-${gIdx}`}>
                   {grp.pod && (
-                    <tr className="bg-slate-50/90 border-y border-slate-200">
+                    <tr className="bg-neutral-50/90 border-y border-neutral-200">
                       <td
                         colSpan={dates.length + 1}
                         className="sticky left-0 px-3 py-1.5 text-[11px] font-bold text-slate-700 uppercase tracking-wider"
@@ -341,15 +341,15 @@ export default function RosterViews({
                     </tr>
                   )}
                   {grp.emps.map((emp) => (
-                    <tr key={emp.id} className="hover:bg-slate-50/60">
-                      <td className="sticky left-0 z-20 bg-white border-r border-slate-200 px-3 py-2">
+                    <tr key={emp.id} className="hover:bg-neutral-50/60">
+                      <td className="sticky left-0 z-20 bg-white border-r border-neutral-200 px-3 py-2">
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
                             <div className="font-semibold text-slate-900 truncate">{emp.name}</div>
                             <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1.5">
                               <span>{emp.id}</span>
                               {emp.role === "POD_LEAD" && (
-                                <span className="px-1 py-0.2 rounded bg-indigo-50 text-indigo-700 font-sans font-semibold">
+                                <span className="px-1 py-0.2 rounded bg-neutral-100 text-neutral-800 font-sans font-semibold">
                                   LEAD
                                 </span>
                               )}
@@ -370,7 +370,7 @@ export default function RosterViews({
                         return (
                           <td
                             key={`${emp.id}-${d}`}
-                            className="p-0.5 border-r border-slate-100 text-center"
+                            className="p-0.5 border-r border-neutral-100 text-center"
                           >
                             <button
                               type="button"
@@ -383,7 +383,7 @@ export default function RosterViews({
                               {meta.code}
                               {entry?.is_manual_override && (
                                 <span
-                                  className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-indigo-600"
+                                  className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-neutral-900"
                                   aria-label="Manual override"
                                 />
                               )}
@@ -400,7 +400,7 @@ export default function RosterViews({
         </div>
 
         {/* Legend */}
-        <div className="bg-slate-50 border-t border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600">
+        <div className="bg-neutral-50 border-t border-neutral-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600">
           <div className="flex flex-wrap items-center gap-3">
             {(Object.keys(STATUS_META) as EmployeeStatusType[]).map((st) => (
               <span key={st} className="inline-flex items-center gap-1.5">
@@ -524,7 +524,7 @@ export default function RosterViews({
       {/* 2. POD-WISE VIEW */}
       {activeView === "pod" && (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               {pods.map((p) => (
                 <button
@@ -561,17 +561,17 @@ export default function RosterViews({
           {renderEmployeeMatrix(podEmployees, false)}
 
           {/* Pod Brand Coverage Table */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 {activePod?.name} — Brand &amp; Process Daily Coverage
               </h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-neutral-50 border-b border-neutral-200">
                   <tr>
-                    <th className="sticky left-0 z-20 bg-slate-50 border-r border-slate-200 px-3 py-2 text-left font-semibold text-slate-700 min-w-[200px]">
+                    <th className="sticky left-0 z-20 bg-neutral-50 border-r border-neutral-200 px-3 py-2 text-left font-semibold text-slate-700 min-w-[200px]">
                       Brand / Process
                     </th>
                     {dates.map((d) => (
@@ -584,8 +584,8 @@ export default function RosterViews({
                 <tbody className="divide-y divide-slate-100">
                   {podBrands.flatMap((brand) =>
                     (rulesByBrand.get(brand.id) || []).map((rule) => (
-                      <tr key={rule.id} className="hover:bg-slate-50/60">
-                        <td className="sticky left-0 z-10 bg-white border-r border-slate-200 px-3 py-2 font-medium text-slate-900">
+                      <tr key={rule.id} className="hover:bg-neutral-50/60">
+                        <td className="sticky left-0 z-10 bg-white border-r border-neutral-200 px-3 py-2 font-medium text-slate-900">
                           <div>{brand.name}</div>
                           <div className="text-[10px] text-slate-500">
                             {procMap.get(rule.process_id)?.code || rule.process_id} &middot;{" "}
@@ -593,7 +593,7 @@ export default function RosterViews({
                           </div>
                         </td>
                         {dates.map((d) => (
-                          <td key={`${rule.id}-${d}`} className="p-1 text-center border-r border-slate-100">
+                          <td key={`${rule.id}-${d}`} className="p-1 text-center border-r border-neutral-100">
                             {renderCoverageBadge(coverageMap.get(`${brand.id}|${rule.process_id}|${d}`))}
                           </td>
                         ))}
@@ -610,13 +610,13 @@ export default function RosterViews({
       {/* 3. BRAND-WISE VIEW */}
       {activeView === "brand" && (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <label className="text-xs font-semibold text-slate-700">Filter Brand:</label>
               <select
                 value={selectedBrandId}
                 onChange={(e) => setSelectedBrandId(e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="text-xs border border-neutral-200 rounded-lg px-3 py-1.5 bg-neutral-50 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-neutral-900/20"
               >
                 <option value="ALL">All Brands ({brands.length})</option>
                 {brands.map((b) => (
@@ -666,13 +666,13 @@ export default function RosterViews({
               return (
                 <div
                   key={brand.id}
-                  className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"
+                  className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden"
                 >
-                  <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-2">
+                  <div className="px-4 py-3 bg-neutral-50 border-b border-neutral-200 flex flex-col md:flex-row md:items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-bold text-slate-900">{brand.name}</span>
                       <span className="text-xs font-mono text-slate-500">({brand.id})</span>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-neutral-100 text-neutral-800">
                         {brand.staffing_model.replace(/_/g, " ")}
                       </span>
                       <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-200 text-slate-700">
@@ -693,9 +693,9 @@ export default function RosterViews({
 
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-xs">
-                      <thead className="bg-white border-b border-slate-200">
+                      <thead className="bg-white border-b border-neutral-200">
                         <tr>
-                          <th className="sticky left-0 z-20 bg-white border-r border-slate-200 px-3 py-2 text-left font-semibold text-slate-700 min-w-[220px]">
+                          <th className="sticky left-0 z-20 bg-white border-r border-neutral-200 px-3 py-2 text-left font-semibold text-slate-700 min-w-[220px]">
                             Process &amp; Operating Calendar
                           </th>
                           {dates.map((d) => (
@@ -712,8 +712,8 @@ export default function RosterViews({
                         {bRules.map((rule) => {
                           const proc = procMap.get(rule.process_id);
                           return (
-                            <tr key={rule.id} className="hover:bg-slate-50/50">
-                              <td className="sticky left-0 z-10 bg-white border-r border-slate-200 px-3 py-2">
+                            <tr key={rule.id} className="hover:bg-neutral-50/50">
+                              <td className="sticky left-0 z-10 bg-white border-r border-neutral-200 px-3 py-2">
                                 <div className="flex items-center gap-1.5">
                                   <span className="font-semibold text-slate-900">
                                     {proc ? `${proc.code} — ${proc.name}` : rule.process_id}
@@ -731,7 +731,7 @@ export default function RosterViews({
                               {dates.map((d) => (
                                 <td
                                   key={`${rule.id}-${d}`}
-                                  className="p-1 text-center border-r border-slate-100"
+                                  className="p-1 text-center border-r border-neutral-100"
                                 >
                                   {renderCoverageBadge(
                                     coverageMap.get(`${brand.id}|${rule.process_id}|${d}`)
@@ -754,13 +754,13 @@ export default function RosterViews({
       {/* 4. PROCESS-WISE VIEW */}
       {activeView === "process" && (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-wrap items-center gap-2">
+          <div className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setSelectedProcessId("ALL")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                 selectedProcessId === "ALL"
-                  ? "bg-indigo-600 text-white"
+                  ? "bg-neutral-900 text-white"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
@@ -782,12 +782,12 @@ export default function RosterViews({
             ))}
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto max-h-[600px]">
               <table className="w-full border-collapse text-xs">
-                <thead className="sticky top-0 z-30 bg-slate-50 border-b border-slate-200">
+                <thead className="sticky top-0 z-30 bg-neutral-50 border-b border-neutral-200">
                   <tr>
-                    <th className="sticky left-0 z-40 bg-slate-50 border-r border-slate-200 px-3 py-2.5 text-left font-semibold text-slate-700 min-w-[220px]">
+                    <th className="sticky left-0 z-40 bg-neutral-50 border-r border-neutral-200 px-3 py-2.5 text-left font-semibold text-slate-700 min-w-[220px]">
                       Brand &middot; Process
                     </th>
                     {dates.map((d) => (
@@ -805,8 +805,8 @@ export default function RosterViews({
                     const brand = brandMap.get(rule.brand_id);
                     const proc = procMap.get(rule.process_id);
                     return (
-                      <tr key={rule.id} className="hover:bg-slate-50/50">
-                        <td className="sticky left-0 z-20 bg-white border-r border-slate-200 px-3 py-2">
+                      <tr key={rule.id} className="hover:bg-neutral-50/50">
+                        <td className="sticky left-0 z-20 bg-white border-r border-neutral-200 px-3 py-2">
                           <div className="font-semibold text-slate-900">
                             {brand?.name || rule.brand_id}
                           </div>
@@ -817,7 +817,7 @@ export default function RosterViews({
                         {dates.map((d) => (
                           <td
                             key={`${rule.id}-${d}`}
-                            className="p-1 text-center border-r border-slate-100"
+                            className="p-1 text-center border-r border-neutral-100"
                           >
                             {renderCoverageBadge(
                               coverageMap.get(`${rule.brand_id}|${rule.process_id}|${d}`)
@@ -837,7 +837,7 @@ export default function RosterViews({
       {/* 5. EMPLOYEE-WISE VIEW & WEEKLY-OFF FAIRNESS SUMMARY */}
       {activeView === "employee" && (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="relative flex-1 max-w-sm">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -845,7 +845,7 @@ export default function RosterViews({
                 value={employeeSearch}
                 onChange={(e) => setEmployeeSearch(e.target.value)}
                 placeholder="Search employee by name, ID, or pod..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/20"
               />
             </div>
             <div className="text-xs text-slate-500">
@@ -882,7 +882,7 @@ export default function RosterViews({
               return (
                 <div
                   key={emp.id}
-                  className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3"
+                  className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm space-y-3"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -890,7 +890,7 @@ export default function RosterViews({
                         <h4 className="text-sm font-bold text-slate-900">{emp.name}</h4>
                         <span className="text-xs font-mono text-slate-500">{emp.id}</span>
                         {emp.role === "POD_LEAD" && (
-                          <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-semibold">
+                          <span className="px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-800 text-[10px] font-semibold">
                             POD LEAD
                           </span>
                         )}
@@ -914,7 +914,7 @@ export default function RosterViews({
                       <div className="font-bold text-emerald-800">{counts.W}</div>
                       <div className="text-[10px] text-emerald-700">Work</div>
                     </div>
-                    <div className="bg-slate-100 border border-slate-200 rounded-lg py-1">
+                    <div className="bg-slate-100 border border-neutral-200 rounded-lg py-1">
                       <div className="font-bold text-slate-800">{counts.WO}</div>
                       <div className="text-[10px] text-slate-600">Off</div>
                     </div>
@@ -952,7 +952,7 @@ export default function RosterViews({
                           <div className="text-[9px] opacity-70">{date.slice(8, 10)}</div>
                           <div>{meta.code}</div>
                           {entry?.is_manual_override && (
-                            <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-indigo-600" />
+                            <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-neutral-900" />
                           )}
                         </button>
                       );
@@ -968,8 +968,8 @@ export default function RosterViews({
       {/* Interactive Cell Override Modal */}
       {editingCell && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[1px]">
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div className="bg-white border border-neutral-200 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="px-5 py-4 border-b border-neutral-200 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Override Roster Cell</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -1001,7 +1001,7 @@ export default function RosterViews({
                 <select
                   value={overrideStatus}
                   onChange={(e) => setOverrideStatus(e.target.value as EmployeeStatusType)}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-sm bg-neutral-50 border border-neutral-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/20"
                 >
                   {(Object.keys(STATUS_META) as EmployeeStatusType[]).map((st) => (
                     <option key={st} value={st}>
@@ -1020,7 +1020,7 @@ export default function RosterViews({
                     <select
                       value={overrideBrandId}
                       onChange={(e) => setOverrideBrandId(e.target.value)}
-                      className="w-full px-2.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                      className="w-full px-2.5 py-2 text-xs bg-neutral-50 border border-neutral-200 rounded-lg text-slate-900"
                     >
                       <option value="">Default / Primary</option>
                       {brands.map((b) => (
@@ -1037,7 +1037,7 @@ export default function RosterViews({
                     <select
                       value={overrideProcessId}
                       onChange={(e) => setOverrideProcessId(e.target.value)}
-                      className="w-full px-2.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                      className="w-full px-2.5 py-2 text-xs bg-neutral-50 border border-neutral-200 rounded-lg text-slate-900"
                     >
                       <option value="">Default / All</option>
                       {processes.map((p) => (
@@ -1059,7 +1059,7 @@ export default function RosterViews({
                   value={overrideNotes}
                   onChange={(e) => setOverrideNotes(e.target.value)}
                   placeholder="e.g., Swap shift or emergency backup"
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-xs bg-neutral-50 border border-neutral-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/20"
                 />
               </div>
 
@@ -1067,14 +1067,14 @@ export default function RosterViews({
                 <button
                   type="button"
                   onClick={() => setEditingCell(null)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className="px-4 py-2 rounded-lg border border-neutral-200 text-xs font-semibold text-slate-700 hover:bg-neutral-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingOverride}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold shadow-sm disabled:opacity-50"
                 >
                   {savingOverride && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Save &amp; Re-Validate
