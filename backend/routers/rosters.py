@@ -47,7 +47,16 @@ class AssignBackupRequest(BaseModel):
     date: str
     brand_id: str
     process_id: str
-    backup_employee_id: str
+    backup_employee_id: Optional[str] = None
+    employee_id: Optional[str] = None
+    notes: Optional[str] = None
+
+    @property
+    def resolved_employee_id(self) -> str:
+        emp_id = self.backup_employee_id or self.employee_id
+        if not emp_id:
+            raise ValueError("Either backup_employee_id or employee_id is required")
+        return emp_id
 
 
 class PodApproveRequest(BaseModel):
@@ -980,24 +989,28 @@ def assign_backup(
     if not db_roster:
         raise HTTPException(status_code=404, detail=f"Roster for '{month}' not found")
 
+    backup_emp_id = payload.backup_employee_id or payload.employee_id
+    if not backup_emp_id:
+        raise HTTPException(status_code=422, detail="backup_employee_id is required")
+
     db_entry = session.exec(
         select(RosterEntry).where(
             RosterEntry.roster_id == roster_id,
-            RosterEntry.employee_id == payload.backup_employee_id,
+            RosterEntry.employee_id == backup_emp_id,
             RosterEntry.date == payload.date,
         )
     ).first()
     if not db_entry:
         raise HTTPException(
             status_code=404,
-            detail=f"RosterEntry for backup employee '{payload.backup_employee_id}' on '{payload.date}' not found",
+            detail=f"RosterEntry for backup employee '{backup_emp_id}' on '{payload.date}' not found",
         )
 
     db_entry.status = "BACKUP_COVERAGE"
     db_entry.assigned_brand_id = payload.brand_id
     db_entry.assigned_process_id = payload.process_id
     db_entry.is_manual_override = True
-    db_entry.notes = f"Backup for {payload.brand_id} ({payload.process_id})"
+    db_entry.notes = payload.notes or f"Backup for {payload.brand_id} ({payload.process_id})"
     session.add(db_entry)
     session.commit()
 
@@ -1012,7 +1025,7 @@ def assign_backup(
             month=month,
             event_type="BACKUP_ASSIGNED",
             message=(
-                f"Backup {payload.backup_employee_id} assigned to {payload.brand_id} "
+                f"Backup {backup_emp_id} assigned to {payload.brand_id} "
                 f"({payload.process_id}) on {payload.date} for published roster {month}."
             ),
             actor_role="OPS_MANAGER",

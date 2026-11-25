@@ -245,6 +245,30 @@ export interface ExplainConflictResponse {
 
 // ─── HTTP Helper ──────────────────────────────────────────────────────────────
 
+function formatApiError(detail: unknown, fallback: string): string {
+  if (!detail) return fallback;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const msgs = detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item && typeof item === "object") {
+          const obj = item as { loc?: unknown[]; msg?: string };
+          const loc = Array.isArray(obj.loc) ? obj.loc.slice(1).join(".") : "";
+          return loc ? `${loc}: ${obj.msg || "Invalid value"}` : obj.msg || JSON.stringify(item);
+        }
+        return String(item);
+      })
+      .filter(Boolean);
+    return msgs.length > 0 ? msgs.join("; ") : fallback;
+  }
+  if (typeof detail === "object") {
+    const maybeMsg = (detail as { message?: string; detail?: string }).message || (detail as { detail?: string }).detail;
+    return maybeMsg || JSON.stringify(detail);
+  }
+  return String(detail);
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
@@ -256,7 +280,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    const err = new Error(errorData.detail || `Request failed (${res.status}): ${res.statusText}`) as Error & {
+    const err = new Error(
+      formatApiError(errorData.detail, `Request failed (${res.status}): ${res.statusText}`)
+    ) as Error & {
       status?: number;
     };
     err.status = res.status;
@@ -317,7 +343,12 @@ export async function assignBackup(
 ): Promise<MonthlyRosterResponse> {
   return request(`/api/rosters/${encodeURIComponent(month)}/assign-backup`, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      date: payload.date,
+      brand_id: payload.brand_id,
+      process_id: payload.process_id,
+      backup_employee_id: payload.employee_id,
+    }),
   });
 }
 
@@ -329,15 +360,35 @@ export function getExcelExportUrl(month: string = "2026-12"): string {
   return `${API_BASE_URL}/api/rosters/${encodeURIComponent(month)}/export.xlsx`;
 }
 
+interface RawPlanItem {
+  strategy: PlanStrategy;
+  label?: string;
+  description?: string;
+  kpis?: KPIStats;
+  coverage_percentage?: number;
+  covered_slots?: number;
+  total_operating_slots?: number;
+  hard_conflicts_count?: number;
+  soft_conflicts_count?: number;
+}
+
 export async function comparePlans(month: string): Promise<ComparePlansResponse> {
-  const data = await request<ComparePlansResponse | PlanComparisonItem[]>(
+  const data = await request<{ month?: string; plans?: RawPlanItem[] } | RawPlanItem[]>(
     `/api/rosters/${encodeURIComponent(month)}/compare-plans`,
     { method: "POST" }
   );
-  if (Array.isArray(data)) {
-    return { month, plans: data };
-  }
-  return data;
+  const rawPlans = Array.isArray(data) ? data : data.plans || [];
+  const plans: PlanComparisonItem[] = rawPlans.map((p) => ({
+    strategy: p.strategy,
+    label: p.label,
+    description: p.description,
+    coverage_percentage: p.kpis?.coverage_percentage ?? p.coverage_percentage ?? 0,
+    covered_slots: p.kpis?.covered_slots ?? p.covered_slots ?? 0,
+    total_operating_slots: p.kpis?.total_operating_slots ?? p.total_operating_slots ?? 0,
+    hard_conflicts_count: p.kpis?.hard_conflicts_count ?? p.hard_conflicts_count ?? 0,
+    soft_conflicts_count: p.kpis?.soft_conflicts_count ?? p.soft_conflicts_count ?? 0,
+  }));
+  return { month, plans };
 }
 
 export async function applyPlan(
@@ -360,12 +411,12 @@ export async function publishRoster(
   month: string,
   force: boolean = false
 ): Promise<PublishRosterResponse> {
-  const qs = force ? "?force=true" : "";
   const res = await fetch(
-    `${API_BASE_URL}/api/rosters/${encodeURIComponent(month)}/publish${qs}`,
+    `${API_BASE_URL}/api/rosters/${encodeURIComponent(month)}/publish`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ force, actor_role: "OPS_MANAGER" }),
     }
   );
 
@@ -378,15 +429,17 @@ export async function publishRoster(
           ? errorData.hard_conflicts_count
           : 1,
       detail:
-        errorData.detail ||
-        "Roster has unresolved HARD conflicts. Override required to publish.",
+        formatApiError(
+          errorData.detail,
+          "Roster has unresolved HARD conflicts. Override required to publish."
+        ),
     };
   }
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     const err = new Error(
-      errorData.detail || `Request failed (${res.status}): ${res.statusText}`
+      formatApiError(errorData.detail, `Request failed (${res.status}): ${res.statusText}`)
     ) as Error & { status?: number };
     err.status = res.status;
     throw err;
@@ -396,12 +449,35 @@ export async function publishRoster(
   return { requiresForce: false, roster };
 }
 
+interface RawNotification {
+  id: number | string;
+  month?: string;
+  event_type?: string;
+  action_type?: string;
+  title?: string;
+  message: string;
+  actor_role?: string;
+  actor?: string;
+  created_at: string;
+  is_read?: boolean;
+  read?: boolean;
+}
+
 export async function fetchNotifications(month: string): Promise<NotificationItem[]> {
-  const data = await request<NotificationItem[] | { notifications: NotificationItem[] }>(
+  const data = await request<RawNotification[] | { notifications: RawNotification[] }>(
     `/api/notifications?month=${encodeURIComponent(month)}`
   );
-  if (Array.isArray(data)) return data;
-  return data.notifications || [];
+  const rawList = Array.isArray(data) ? data : data.notifications || [];
+  return rawList.map((n) => ({
+    id: String(n.id),
+    month: n.month,
+    title: n.title || (n.event_type ? n.event_type.replace(/_/g, " ") : "Roster Update"),
+    message: n.message,
+    created_at: n.created_at,
+    read: typeof n.is_read === "boolean" ? n.is_read : Boolean(n.read),
+    actor: n.actor || n.actor_role,
+    action_type: n.action_type || n.event_type,
+  }));
 }
 
 export async function markNotificationsRead(): Promise<{ status?: string }> {
