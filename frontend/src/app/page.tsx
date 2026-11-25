@@ -407,7 +407,9 @@ export default function HomePage() {
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-neutral-200 rounded-2xl shadow-xl z-50 overflow-hidden">
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-neutral-200 rounded-2xl shadow-xl z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
                     <div>
                       <h3 className="text-xs font-bold text-neutral-950">
@@ -457,6 +459,7 @@ export default function HomePage() {
                     )}
                   </div>
                 </div>
+                </>
               )}
             </div>
           </div>
