@@ -285,9 +285,141 @@ def generate_roster(
                 "backup_employee_ids": backup_ids_assigned,
             })
 
-    # Step 4: Run Validation Pass (6 checks)
+    return recalculate_coverage_and_validate(
+        month_str=month_str,
+        entries=entries_list,
+        employees=employees,
+        brands=brands,
+        processes=processes,
+        brand_process_rules=brand_process_rules,
+        allocations=allocations,
+        public_holidays=public_holidays,
+        leaves_and_compoffs=leaves_and_compoffs,
+        soft_preference_overrides=soft_preference_overrides,
+    )
+
+
+def recalculate_coverage_and_validate(
+    month_str: str,
+    entries: List[Dict[str, Any]],
+    employees: List[Dict[str, Any]],
+    brands: List[Dict[str, Any]],
+    processes: List[Dict[str, Any]],
+    brand_process_rules: List[Dict[str, Any]],
+    allocations: List[Dict[str, Any]],
+    public_holidays: List[Dict[str, Any]],
+    leaves_and_compoffs: List[Dict[str, Any]],
+    soft_preference_overrides: Optional[List[Dict[str, Any]]] = None,
+    roster_status: str = "DRAFT",
+    generated_at: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Pure incremental re-evaluation helper.
+    Takes existing roster entries (e.g. after a manual edit, backup assignment, or leave approval),
+    evaluates coverage_matrix (respecting BACKUP_COVERAGE entries with assigned_brand_id &
+    assigned_process_id as well as WORKING primary employees), runs validate_roster,
+    computes KPIs, and returns the MonthlyRosterResponse dict.
+    """
+    month_dates = get_month_dates(month_str)
+    brand_dict = {b["id"]: b for b in brands}
+    proc_dict = {p["id"]: p for p in processes}
+    ph_dates = {ph["date"] for ph in public_holidays}
+
+    primary_allocations_by_bp: Dict[tuple, List[str]] = defaultdict(list)
+    for alc in allocations:
+        if alc.get("allocation_type") == "PRIMARY":
+            primary_allocations_by_bp[(alc["brand_id"], alc["process_id"])].append(alc["employee_id"])
+
+    emp_status_by_date: Dict[str, Dict[str, str]] = defaultdict(dict)
+    assigned_backups_by_bp_date: Dict[tuple, List[str]] = defaultdict(list)
+
+    for entry in entries:
+        d_str = entry["date"]
+        e_id = entry["employee_id"]
+        status = entry.get("status", "WORKING")
+        emp_status_by_date[d_str][e_id] = status
+        if status == "BACKUP_COVERAGE":
+            b_id = entry.get("assigned_brand_id")
+            p_id = entry.get("assigned_process_id")
+            if b_id and p_id:
+                assigned_backups_by_bp_date[(b_id, p_id, d_str)].append(e_id)
+
+    sorted_rules = sorted(
+        brand_process_rules,
+        key=lambda r: (r.get("calendar_type") != "365_DAYS", r["id"]),
+    )
+
+    coverage_matrix: List[Dict[str, Any]] = []
+    for d_obj in month_dates:
+        d_str = d_obj.strftime("%Y-%m-%d")
+        is_ph = d_str in ph_dates
+
+        for rule in sorted_rules:
+            b_id = rule["brand_id"]
+            p_id = rule["process_id"]
+            cal_type = rule.get("calendar_type", "365_DAYS")
+            base_min = rule.get("min_staffing", 1)
+            day_overrides = rule.get("day_min_staffing_overrides", {})
+            b_name = brand_dict.get(b_id, {}).get("name", b_id)
+            p_code = proc_dict.get(p_id, {}).get("code", p_id)
+
+            is_op = is_operating_day(cal_type, d_obj, is_ph)
+            req_staffing = get_required_staffing(cal_type, d_obj, is_ph, base_min, day_overrides)
+
+            if not is_op or req_staffing == 0:
+                coverage_matrix.append({
+                    "date": d_str,
+                    "brand_id": b_id,
+                    "brand_name": b_name,
+                    "process_id": p_id,
+                    "process_code": p_code,
+                    "calendar_type": cal_type,
+                    "is_operating": False,
+                    "required_staffing": 0,
+                    "working_count": 0,
+                    "status": "NOT_OPERATING",
+                    "assigned_employee_ids": [],
+                    "backup_employee_ids": [],
+                })
+                continue
+
+            assigned_backups = assigned_backups_by_bp_date.get((b_id, p_id, d_str), [])
+            assigned_backups_set = set(assigned_backups)
+
+            primaries = primary_allocations_by_bp.get((b_id, p_id), [])
+            active_primaries = [
+                e_id for e_id in primaries
+                if e_id not in assigned_backups_set
+                and emp_status_by_date[d_str].get(e_id) in ("WORKING", "BACKUP_COVERAGE")
+            ]
+
+            working_count = len(active_primaries) + len(assigned_backups)
+            if len(active_primaries) >= req_staffing and not assigned_backups:
+                cov_status = "COVERED"
+            elif working_count >= req_staffing:
+                cov_status = "BACKUP_COVERED" if assigned_backups else "COVERED"
+            elif working_count > 0:
+                cov_status = "UNDERSTAFFED"
+            else:
+                cov_status = "UNCOVERED"
+
+            coverage_matrix.append({
+                "date": d_str,
+                "brand_id": b_id,
+                "brand_name": b_name,
+                "process_id": p_id,
+                "process_code": p_code,
+                "calendar_type": cal_type,
+                "is_operating": True,
+                "required_staffing": req_staffing,
+                "working_count": working_count,
+                "status": cov_status,
+                "assigned_employee_ids": active_primaries,
+                "backup_employee_ids": list(assigned_backups),
+            })
+
     conflicts = validate_roster(
-        roster_entries=entries_list,
+        roster_entries=entries,
         coverage_matrix=coverage_matrix,
         employees=employees,
         brands=brands,
@@ -297,15 +429,20 @@ def generate_roster(
         soft_preference_overrides=soft_preference_overrides,
     )
 
-    # Step 5: Compute Roster KPIs
     operating_slots = [c for c in coverage_matrix if c.get("is_operating")]
-    covered_or_backup_slots = [c for c in operating_slots if c.get("status") in ("COVERED", "BACKUP_COVERED")]
+    covered_or_backup_slots = [
+        c for c in operating_slots if c.get("status") in ("COVERED", "BACKUP_COVERED")
+    ]
     uncovered_slots = [c for c in operating_slots if c.get("status") == "UNCOVERED"]
     understaffed_slots = [c for c in operating_slots if c.get("status") == "UNDERSTAFFED"]
     hard_conflicts = [c for c in conflicts if c.get("severity") == "HARD"]
     soft_conflicts = [c for c in conflicts if c.get("severity") == "SOFT"]
 
-    coverage_rate = (len(covered_or_backup_slots) / len(operating_slots) * 100.0) if operating_slots else 100.0
+    coverage_rate = (
+        (len(covered_or_backup_slots) / len(operating_slots) * 100.0)
+        if operating_slots
+        else 100.0
+    )
 
     kpis = {
         "total_employees": len(employees),
@@ -321,10 +458,10 @@ def generate_roster(
     return {
         "month": month_str,
         "roster_id": f"ROST-{month_str}",
-        "status": "DRAFT",
-        "generated_at": datetime.now().isoformat(),
+        "status": roster_status,
+        "generated_at": generated_at or datetime.now().isoformat(),
         "kpis": kpis,
-        "entries": entries_list,
+        "entries": entries,
         "coverage_matrix": coverage_matrix,
         "conflicts": conflicts,
     }

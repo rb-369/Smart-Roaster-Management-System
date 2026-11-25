@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_db
-from routers import rosters
+from routers import entities, leaves, rosters
 
 
 @asynccontextmanager
@@ -34,6 +34,8 @@ app.add_middleware(
 
 # Register routers
 app.include_router(rosters.router)
+app.include_router(entities.router)
+app.include_router(leaves.router)
 
 
 @app.get("/api/health", tags=["Health"])
