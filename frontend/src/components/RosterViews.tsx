@@ -299,8 +299,8 @@ export default function RosterViews({
               </tr>
 
               {/* Daily Coverage Health Summary Row */}
-              <tr className="bg-white border-b border-neutral-200">
-                <th className="sticky left-0 z-40 bg-white border-r border-neutral-200 px-3 py-1.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <tr className="bg-white border-b-2 border-neutral-300">
+                <th className="sticky left-0 z-40 bg-white border-r-2 border-neutral-200 px-3 py-2 text-left text-[11px] font-semibold text-neutral-600 uppercase tracking-wider">
                   Daily Coverage Health
                 </th>
                 {dates.map((d) => {
@@ -308,7 +308,7 @@ export default function RosterViews({
                   return (
                     <th
                       key={`health-${d}`}
-                      className="px-1 py-1.5 text-center border-r border-neutral-100 tabular-nums"
+                      className="px-1 py-2 text-center border-r border-neutral-200/70 tabular-nums"
                       title={gaps === 0 ? `${d}: All slots covered` : `${d}: ${gaps} coverage gap(s)`}
                     >
                       {gaps === 0 ? (
@@ -326,35 +326,46 @@ export default function RosterViews({
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100">
-              {groups.map((grp, gIdx) => (
+            <tbody className="divide-y divide-neutral-200">
+              {groups.map((grp, gIdx) => {
+                const podDotColors = ["bg-rose-500", "bg-sky-500", "bg-emerald-500", "bg-amber-500"];
+                const podDot = podDotColors[gIdx % podDotColors.length];
+                return (
                 <React.Fragment key={grp.pod?.id || `grp-${gIdx}`}>
                   {grp.pod && (
-                    <tr className="bg-neutral-50/90 border-y border-neutral-200">
+                    <tr className="bg-neutral-100/95 border-y-2 border-neutral-300">
                       <td
                         colSpan={dates.length + 1}
-                        className="sticky left-0 px-3 py-1.5 text-[11px] font-bold text-slate-700 uppercase tracking-wider"
+                        className="sticky left-0 px-3 py-2 text-[11px] font-bold text-neutral-800 uppercase tracking-wider"
                       >
-                        {grp.pod.name} ({grp.pod.id}) &middot; Lead:{" "}
-                        {empMap.get(grp.pod.lead_employee_id)?.name || grp.pod.lead_employee_id}
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${podDot}`} />
+                          <span>
+                            {grp.pod.name} ({grp.pod.id})
+                          </span>
+                          <span className="text-neutral-400">&middot;</span>
+                          <span className="text-neutral-600 font-semibold">
+                            Lead: {empMap.get(grp.pod.lead_employee_id)?.name || grp.pod.lead_employee_id}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   )}
                   {grp.emps.map((emp) => (
-                    <tr key={emp.id} className="hover:bg-neutral-50/60">
-                      <td className="sticky left-0 z-20 bg-white border-r border-neutral-200 px-3 py-2">
+                    <tr key={emp.id} className="bg-white even:bg-neutral-50/50 hover:bg-blue-50/30 transition-colors">
+                      <td className="sticky left-0 z-20 bg-white border-r-2 border-neutral-200 px-3 py-2">
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="font-semibold text-slate-900 truncate">{emp.name}</div>
-                            <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1.5">
+                            <div className="font-semibold text-neutral-900 truncate">{emp.name}</div>
+                            <div className="text-[10px] text-neutral-500 font-mono flex items-center gap-1.5">
                               <span>{emp.id}</span>
                               {emp.role === "POD_LEAD" && (
-                                <span className="px-1 py-0.2 rounded bg-neutral-100 text-neutral-800 font-sans font-semibold">
+                                <span className="px-1.5 py-0.2 rounded-full bg-neutral-100 text-neutral-800 border border-neutral-200 font-sans font-semibold">
                                   LEAD
                                 </span>
                               )}
                               {emp.is_floater && (
-                                <span className="px-1 py-0.2 rounded bg-teal-50 text-teal-700 font-sans font-semibold">
+                                <span className="px-1.5 py-0.2 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-sans font-semibold">
                                   FLOATER
                                 </span>
                               )}
@@ -367,10 +378,15 @@ export default function RosterViews({
                         const entry = entryMap.get(`${emp.id}|${d}`);
                         const status = entry?.status || "WEEKLY_OFF";
                         const meta = STATUS_META[status];
+                        const wd = WEEKDAY_LABELS[getPythonWeekday(d)];
+                        const isWeekend = wd === "Sat" || wd === "Sun";
+                        const isPh = holidayMap.has(d);
                         return (
                           <td
                             key={`${emp.id}-${d}`}
-                            className="p-0.5 border-r border-neutral-100 text-center"
+                            className={`p-0.5 border-r border-neutral-200/70 text-center ${
+                              isPh ? "bg-sky-50/40" : isWeekend ? "bg-neutral-100/50" : ""
+                            }`}
                           >
                             <button
                               type="button"
@@ -378,7 +394,7 @@ export default function RosterViews({
                               title={`${emp.name} (${d}): ${meta.label}${
                                 entry?.assigned_brand_id ? ` • ${entry.assigned_brand_id}` : ""
                               }${entry?.is_manual_override ? " • Manual Override" : ""}`}
-                              className={`relative w-full h-7 rounded border text-[10px] font-bold transition-colors tabular-nums ${meta.badgeClass}`}
+                              className={`relative w-full h-7 rounded-md border text-[10px] font-bold transition-colors tabular-nums ${meta.badgeClass}`}
                             >
                               {meta.code}
                               {entry?.is_manual_override && (
@@ -394,7 +410,8 @@ export default function RosterViews({
                     </tr>
                   ))}
                 </React.Fragment>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
