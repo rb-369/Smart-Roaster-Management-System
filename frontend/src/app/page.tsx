@@ -119,6 +119,16 @@ export default function HomePage() {
     setNotifications(list);
   }, []);
 
+  const handleRosterUpdated = useCallback(
+    (updated: MonthlyRosterResponse) => {
+      setRosterData(updated);
+      if (updated.status === "PUBLISHED") {
+        loadNotifications(updated.month);
+      }
+    },
+    [loadNotifications]
+  );
+
   const loadOrGenerateRoster = useCallback(async (targetMonth: string) => {
     try {
       setLoadingRoster(true);
@@ -603,6 +613,7 @@ export default function HomePage() {
           kpis={rosterData?.kpis || null}
           totalEmployeesFallback={employees.length}
           pendingLeavesCount={pendingLeavesCount}
+          podCount={pods.length}
           onOpenConflicts={openConflictsDrawer}
           onJumpToLeaves={() => {
             setSetupInitialTab("leaves");
@@ -616,7 +627,7 @@ export default function HomePage() {
           leaves={leaves}
           employees={employees}
           currentRoster={rosterData}
-          onRosterUpdated={setRosterData}
+          onRosterUpdated={handleRosterUpdated}
           onLeavesUpdated={loadEntities}
           onOpenConflicts={openConflictsDrawer}
         />
@@ -634,7 +645,7 @@ export default function HomePage() {
               rules={rules}
               allocations={allocations}
               holidays={holidays}
-              onRosterUpdated={setRosterData}
+              onRosterUpdated={handleRosterUpdated}
             />
           ) : (
             <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-12 text-center">
@@ -684,7 +695,7 @@ export default function HomePage() {
         month={month}
         conflicts={rosterData?.conflicts || []}
         initialSeverity={drawerSeverity}
-        onRosterUpdated={setRosterData}
+        onRosterUpdated={handleRosterUpdated}
       />
 
       {/* Plan Comparison Modal */}
@@ -692,7 +703,7 @@ export default function HomePage() {
         open={compareModalOpen}
         onClose={() => setCompareModalOpen(false)}
         month={month}
-        onRosterUpdated={setRosterData}
+        onRosterUpdated={handleRosterUpdated}
       />
 
       {/* Publish Override Warning Confirmation Modal */}

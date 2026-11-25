@@ -8,6 +8,7 @@ interface KpiBarProps {
   kpis: KPIStats | null;
   totalEmployeesFallback: number;
   pendingLeavesCount: number;
+  podCount?: number;
   onOpenConflicts: (severity?: "ALL" | "HARD" | "SOFT") => void;
   onJumpToLeaves?: () => void;
 }
@@ -16,6 +17,7 @@ export default function KpiBar({
   kpis,
   totalEmployeesFallback,
   pendingLeavesCount,
+  podCount,
   onOpenConflicts,
   onJumpToLeaves,
 }: KpiBarProps) {
@@ -39,7 +41,7 @@ export default function KpiBar({
         <div className="text-2xl font-bold tracking-tight text-neutral-950 tabular-nums">
           {totalEmployees}
         </div>
-        <div className="text-xs text-neutral-500 mt-1">Active across 4 pods</div>
+        <div className="text-xs text-neutral-500 mt-1">Active across {podCount ?? 4} pod{(podCount ?? 4) !== 1 ? "s" : ""}</div>
       </div>
 
       {/* Coverage % */}

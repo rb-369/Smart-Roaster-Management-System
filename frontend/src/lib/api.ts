@@ -488,9 +488,26 @@ export async function explainConflict(
   month: string,
   conflict: Conflict
 ): Promise<ExplainConflictResponse> {
+  // Send only the fields the backend ExplainConflictRequest expects
+  const payload = {
+    date: conflict.date,
+    conflict_type: conflict.conflict_type,
+    severity: conflict.severity,
+    brand_name: conflict.brand_name ?? null,
+    process_name: conflict.process_name ?? null,
+    employee_name: conflict.employee_name ?? null,
+    message: conflict.message,
+    suggested_resolutions: (conflict.suggested_resolutions || []).map((r) => ({
+      employee_id: r.employee_id,
+      name: r.name,
+      score: r.score,
+      tier: r.tier,
+      reason: r.reason,
+    })),
+  };
   return request(`/api/rosters/${encodeURIComponent(month)}/explain-conflict`, {
     method: "POST",
-    body: JSON.stringify(conflict),
+    body: JSON.stringify(payload),
   });
 }
 

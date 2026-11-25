@@ -41,3 +41,7 @@ yarn-error.log*
 *.swp
 *.swo
 .DS_Store
+
+quality-checks
+
+usecases.md

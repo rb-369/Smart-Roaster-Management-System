@@ -420,6 +420,55 @@ def generate_roster(
     )
 
 
+def _derive_soft_preference_overrides(
+    entries: List[Dict[str, Any]],
+    employees: List[Dict[str, Any]],
+    brands: List[Dict[str, Any]],
+    allocations: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    Derive PREFERENCE_VIOLATED soft conflicts from current roster entries.
+    For every WEEKLY_OFF entry that falls on a day != employee's preferred_weekly_off,
+    emit a soft preference override record so the validator can flag it.
+    """
+    emp_dict = {e["id"]: e for e in employees}
+    brand_dict = {b["id"]: b for b in brands}
+
+    # Map emp -> first primary brand
+    emp_primary_bp: Dict[str, tuple] = {}
+    for alc in allocations:
+        if alc.get("allocation_type") == "PRIMARY":
+            emp_primary_bp.setdefault(alc["employee_id"], (alc["brand_id"], alc["process_id"]))
+
+    overrides: List[Dict[str, Any]] = []
+    for entry in entries:
+        if entry.get("status") != "WEEKLY_OFF":
+            continue
+        e_id = entry["employee_id"]
+        emp = emp_dict.get(e_id)
+        if not emp:
+            continue
+        pref = emp.get("preferred_weekly_off", emp.get("default_weekly_off", 6))
+        d_str = entry["date"]
+        d_obj = datetime.strptime(d_str, "%Y-%m-%d").date()
+        actual_wd = d_obj.weekday()
+        if actual_wd != pref:
+            bp_key = emp_primary_bp.get(e_id)
+            b_id = bp_key[0] if bp_key else None
+            p_id = bp_key[1] if bp_key else None
+            b_name = brand_dict.get(b_id, {}).get("name", b_id) if b_id else "client"
+            overrides.append({
+                "employee_id": e_id,
+                "date": d_str,
+                "brand_id": b_id,
+                "brand_name": b_name,
+                "process_id": p_id,
+                "preferred_day_name": WEEKDAY_NAMES[pref],
+                "assigned_day_name": WEEKDAY_NAMES[actual_wd],
+            })
+    return overrides
+
+
 def recalculate_coverage_and_validate(
     month_str: str,
     entries: List[Dict[str, Any]],
@@ -441,6 +490,13 @@ def recalculate_coverage_and_validate(
     assigned_process_id as well as WORKING primary employees), runs validate_roster,
     computes KPIs, and returns the MonthlyRosterResponse dict.
     """
+    # If soft_preference_overrides not provided (e.g. after manual edit / backup assign),
+    # derive them from the current entries so PREFERENCE_VIOLATED soft conflicts are preserved.
+    if soft_preference_overrides is None:
+        soft_preference_overrides = _derive_soft_preference_overrides(
+            entries, employees, brands, allocations
+        )
+
     month_dates = get_month_dates(month_str)
     brand_dict = {b["id"]: b for b in brands}
     proc_dict = {p["id"]: p for p in processes}

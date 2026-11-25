@@ -68,6 +68,8 @@ export default function ConflictDrawer({
       if (!q) return true;
       return (
         c.message.toLowerCase().includes(q) ||
+        (c.conflict_type || "").toLowerCase().replace(/_/g, " ").includes(q) ||
+        (c.conflict_type || "").toLowerCase().includes(q) ||
         (c.brand_id || "").toLowerCase().includes(q) ||
         (c.brand_name || "").toLowerCase().includes(q) ||
         (c.process_id || "").toLowerCase().includes(q) ||
@@ -199,12 +201,12 @@ export default function ConflictDrawer({
             {feedback && (
               <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3.5 py-2 rounded-lg text-xs font-medium">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                <span>{feedback}</span>
+                <span>{typeof feedback === "string" ? feedback : JSON.stringify(feedback)}</span>
               </div>
             )}
             {errorMsg && (
               <div className="bg-rose-50 border border-rose-200 text-rose-800 px-3.5 py-2 rounded-lg text-xs font-medium">
-                {errorMsg}
+                {typeof errorMsg === "string" ? errorMsg : JSON.stringify(errorMsg)}
               </div>
             )}
           </div>
