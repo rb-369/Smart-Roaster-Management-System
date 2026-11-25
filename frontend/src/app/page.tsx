@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   Calendar,
   Download,
+  FileSpreadsheet,
   Layers,
   RefreshCw,
   RotateCcw,
@@ -12,6 +13,13 @@ import {
   LayoutGrid,
   Loader2,
   Info,
+  Bell,
+  CheckCircle2,
+  Sliders,
+  Send,
+  UserCheck,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import {
   Allocation,
@@ -20,9 +28,11 @@ import {
   Employee,
   LeaveAndCompOff,
   MonthlyRosterResponse,
+  NotificationItem,
   Pod,
   Process,
   PublicHoliday,
+  approvePodRoster,
   fetchAllocations,
   fetchBrands,
   fetchEmployees,
@@ -30,11 +40,15 @@ import {
   fetchHolidays,
   fetchLeaves,
   fetchMonthlyRoster,
+  fetchNotifications,
   fetchPods,
   fetchProcesses,
   fetchRules,
   generateMonthlyRoster,
   getCsvExportUrl,
+  getExcelExportUrl,
+  markNotificationsRead,
+  publishRoster,
   resetSeedData,
 } from "@/lib/api";
 import KpiBar from "@/components/KpiBar";
@@ -42,6 +56,7 @@ import PendingLeavesBanner from "@/components/PendingLeavesBanner";
 import RosterViews from "@/components/RosterViews";
 import ConflictDrawer from "@/components/ConflictDrawer";
 import ManagementTabs, { ManagementSubTab } from "@/components/ManagementTabs";
+import PlanComparisonModal from "@/components/PlanComparisonModal";
 
 export default function HomePage() {
   const [month, setMonth] = useState("2026-12");
@@ -66,6 +81,18 @@ export default function HomePage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerSeverity, setDrawerSeverity] = useState<"ALL" | "HARD" | "SOFT">("ALL");
 
+  const [userRole, setUserRole] = useState<"OPS_MANAGER" | "POD_LEAD">("OPS_MANAGER");
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
+  const [approvingPod, setApprovingPod] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishOverrideModal, setPublishOverrideModal] = useState<{
+    hardConflictsCount: number;
+    detail: string;
+  } | null>(null);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [markingNotifs, setMarkingNotifs] = useState(false);
+
   const loadEntities = useCallback(async () => {
     const [p, pr, emp, br, ru, al, lv, hl] = await Promise.all([
       fetchPods().catch(() => []),
@@ -87,6 +114,11 @@ export default function HomePage() {
     setHolidays(hl);
   }, []);
 
+  const loadNotifications = useCallback(async (targetMonth: string) => {
+    const list = await fetchNotifications(targetMonth).catch(() => []);
+    setNotifications(list);
+  }, []);
+
   const loadOrGenerateRoster = useCallback(async (targetMonth: string) => {
     try {
       setLoadingRoster(true);
@@ -103,12 +135,13 @@ export default function HomePage() {
           throw err;
         }
       }
+      await loadNotifications(targetMonth);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Failed to load roster from backend.");
     } finally {
       setLoadingRoster(false);
     }
-  }, []);
+  }, [loadNotifications]);
 
   useEffect(() => {
     const init = async () => {
@@ -160,6 +193,63 @@ export default function HomePage() {
     setDrawerOpen(true);
   };
 
+  const handleApprovePod = async () => {
+    try {
+      setApprovingPod(true);
+      setErrorMsg(null);
+      const updated = await approvePodRoster(month);
+      setRosterData(updated);
+      await loadNotifications(month);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to approve pod roster.");
+    } finally {
+      setApprovingPod(false);
+    }
+  };
+
+  const handlePublish = async (force: boolean = false) => {
+    if (!force && hardConflictsCount > 0) {
+      setPublishOverrideModal({
+        hardConflictsCount,
+        detail: `This roster still has ${hardConflictsCount} unresolved HARD conflict(s). Publishing now will notify stakeholders with active coverage gaps.`,
+      });
+      return;
+    }
+    try {
+      setPublishing(true);
+      setErrorMsg(null);
+      const res = await publishRoster(month, force);
+      if (res.requiresForce) {
+        setPublishOverrideModal({
+          hardConflictsCount: res.hardConflictsCount,
+          detail: res.detail,
+        });
+        return;
+      }
+      setRosterData(res.roster);
+      setPublishOverrideModal(null);
+      await loadNotifications(month);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to publish roster.");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      setMarkingNotifs(true);
+      await markNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to mark notifications read.");
+    } finally {
+      setMarkingNotifs(false);
+    }
+  };
+
+  const unreadNotifsCount = notifications.filter((n) => !n.read).length;
+  const workflowStatus = rosterData?.status || "DRAFT";
   const pendingLeavesCount = leaves.filter((l) => l.status === "PENDING").length;
   const totalConflictsCount = rosterData?.conflicts?.length ?? 0;
   const hardConflictsCount = rosterData?.kpis?.hard_conflicts_count ?? 0;
@@ -232,6 +322,17 @@ export default function HomePage() {
               {loadingRoster ? "Solving..." : "Generate Roster"}
             </button>
 
+            {/* Compare Plans */}
+            <button
+              type="button"
+              onClick={() => setCompareModalOpen(true)}
+              disabled={loadingRoster || resetting}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs font-semibold transition-colors disabled:opacity-50"
+            >
+              <Sliders className="w-3.5 h-3.5 text-blue-600" />
+              Compare Plans
+            </button>
+
             {/* Reset Demo Data */}
             <button
               type="button"
@@ -254,6 +355,17 @@ export default function HomePage() {
               Export CSV
             </a>
 
+            {/* Export Excel (.xlsx) */}
+            <a
+              href={getExcelExportUrl(month)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs font-medium transition-colors"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              Export Excel (.xlsx)
+            </a>
+
             {/* Conflicts Drawer Trigger */}
             <button
               type="button"
@@ -267,51 +379,212 @@ export default function HomePage() {
               <ShieldAlert className="w-3.5 h-3.5" />
               Conflicts ({totalConflictsCount})
             </button>
+
+            {/* Notification Bell */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setNotifOpen((prev) => !prev)}
+                className="relative p-2 rounded-full bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700 transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadNotifsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
+                    {unreadNotifsCount}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-neutral-200 rounded-2xl shadow-xl z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
+                    <div>
+                      <h3 className="text-xs font-bold text-neutral-950">
+                        Roster Audit &amp; Notifications
+                      </h3>
+                      <p className="text-[11px] text-neutral-500">
+                        {unreadNotifsCount} unread update(s) for {month}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={markingNotifs || unreadNotifsCount === 0}
+                      onClick={handleMarkAllRead}
+                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-40"
+                    >
+                      Mark all read
+                    </button>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto divide-y divide-neutral-100">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-neutral-500">
+                        No published-roster change logs yet.
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className={`px-4 py-3 text-xs space-y-1 ${
+                            n.read ? "bg-white" : "bg-blue-50/50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-neutral-900">
+                              {n.title || n.action_type || "Roster Update"}
+                            </span>
+                            {!n.read && (
+                              <span className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-neutral-600 leading-relaxed">{n.message}</p>
+                          <div className="text-[10px] text-neutral-400 tabular-nums">
+                            {n.actor ? `${n.actor} · ` : ""}
+                            {n.created_at}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Clean Pill Navigation Bar */}
+        {/* Clean Pill Navigation Bar + Role Switcher + Workflow Approval Bar */}
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 pb-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center p-1 rounded-full bg-neutral-100 border border-neutral-200/80">
-            <button
-              type="button"
-              onClick={() => setMainSection("workspace")}
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                mainSection === "workspace"
-                  ? "bg-white text-neutral-950 shadow-xs"
-                  : "text-neutral-600 hover:text-neutral-950"
-              }`}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center p-1 rounded-full bg-neutral-100 border border-neutral-200/80">
+              <button
+                type="button"
+                onClick={() => setMainSection("workspace")}
+                className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  mainSection === "workspace"
+                    ? "bg-white text-neutral-950 shadow-xs"
+                    : "text-neutral-600 hover:text-neutral-950"
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                Roster Workspace (5 Views)
+              </button>
+              <button
+                type="button"
+                onClick={() => setMainSection("setup")}
+                className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  mainSection === "setup"
+                    ? "bg-white text-neutral-950 shadow-xs"
+                    : "text-neutral-600 hover:text-neutral-950"
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Operations Setup (CRUD)
+              </button>
+            </div>
+
+            {/* Role Switcher Pill */}
+            <div
+              className="inline-flex items-center p-1 rounded-full bg-neutral-100 border border-neutral-200/80"
+              role="group"
+              aria-label="Role Switcher"
             >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              Roster Workspace (5 Views)
-            </button>
-            <button
-              type="button"
-              onClick={() => setMainSection("setup")}
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                mainSection === "setup"
-                  ? "bg-white text-neutral-950 shadow-xs"
-                  : "text-neutral-600 hover:text-neutral-950"
-              }`}
-            >
-              <Settings className="w-3.5 h-3.5" />
-              Operations Setup (CRUD)
-            </button>
+              <button
+                type="button"
+                onClick={() => setUserRole("OPS_MANAGER")}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
+                  userRole === "OPS_MANAGER"
+                    ? "bg-neutral-900 text-white shadow-xs"
+                    : "text-neutral-600 hover:text-neutral-950"
+                }`}
+              >
+                Ops Manager
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserRole("POD_LEAD")}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
+                  userRole === "POD_LEAD"
+                    ? "bg-neutral-900 text-white shadow-xs"
+                    : "text-neutral-600 hover:text-neutral-950"
+                }`}
+              >
+                Pod Lead
+              </button>
+            </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-2 text-[11px] text-neutral-500">
-            <Info className="w-3.5 h-3.5 text-neutral-400" />
-            <span>
-              Tip: Click any grid cell to override status, or open{" "}
+          {/* Roster Workflow Status & Approval Bar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-neutral-200 bg-neutral-50 text-[11px] font-semibold text-neutral-700">
+              <span>Status:</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  workflowStatus === "PUBLISHED"
+                    ? "bg-emerald-600 text-white"
+                    : workflowStatus === "POD_APPROVED"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-200 text-slate-800"
+                }`}
+              >
+                {workflowStatus}
+              </span>
+            </div>
+
+            {workflowStatus === "DRAFT" && (
+              <button
+                type="button"
+                disabled={approvingPod || !rosterData}
+                onClick={handleApprovePod}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${
+                  userRole === "POD_LEAD"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                    : "bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700"
+                }`}
+              >
+                {approvingPod ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <UserCheck className="w-3.5 h-3.5" />
+                )}
+                Approve as Pod Lead
+              </button>
+            )}
+
+            {workflowStatus !== "PUBLISHED" ? (
+              <button
+                type="button"
+                disabled={publishing || !rosterData}
+                onClick={() => handlePublish(false)}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${
+                  userRole === "OPS_MANAGER"
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                    : "bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700"
+                }`}
+              >
+                {publishing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+                Publish Roster
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Published
+              </span>
+            )}
+
+            <div className="hidden xl:flex items-center gap-1.5 text-[11px] text-neutral-500 pl-2 border-l border-neutral-200">
+              <Info className="w-3.5 h-3.5 text-neutral-400" />
               <button
                 type="button"
                 onClick={() => openConflictsDrawer("HARD")}
-                className="font-semibold text-neutral-800 underline underline-offset-2 hover:text-neutral-950"
+                className="font-semibold text-neutral-700 underline underline-offset-2 hover:text-neutral-950"
               >
-                Conflicts
-              </button>{" "}
-              for 1-click backup resolution.
-            </span>
+                1-click backup
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -413,6 +686,64 @@ export default function HomePage() {
         initialSeverity={drawerSeverity}
         onRosterUpdated={setRosterData}
       />
+
+      {/* Plan Comparison Modal */}
+      <PlanComparisonModal
+        open={compareModalOpen}
+        onClose={() => setCompareModalOpen(false)}
+        month={month}
+        onRosterUpdated={setRosterData}
+      />
+
+      {/* Publish Override Warning Confirmation Modal */}
+      {publishOverrideModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/35 backdrop-blur-[2px]">
+          <div className="bg-white border border-neutral-200 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="px-5 py-4 border-b border-neutral-200 flex items-center justify-between bg-rose-50/70">
+              <div className="flex items-center gap-2 text-rose-800">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+                <h3 className="text-sm font-bold">Unresolved Hard Conflicts</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPublishOverrideModal(null)}
+                className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-neutral-700 leading-relaxed">
+                {publishOverrideModal.detail}
+              </p>
+              <div className="bg-rose-50 border border-rose-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-rose-800">
+                Hard Conflicts Remaining: {publishOverrideModal.hardConflictsCount}
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPublishOverrideModal(null);
+                    openConflictsDrawer("HARD");
+                  }}
+                  className="px-3.5 py-2 rounded-lg border border-neutral-200 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                >
+                  Resolve Conflicts
+                </button>
+                <button
+                  type="button"
+                  disabled={publishing}
+                  onClick={() => handlePublish(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs disabled:opacity-50"
+                >
+                  {publishing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Publish Anyway (Override)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

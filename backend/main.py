@@ -43,6 +43,7 @@ app.add_middleware(
 )
 
 # Register routers
+app.include_router(rosters.notifications_router)
 app.include_router(rosters.router)
 app.include_router(entities.router)
 app.include_router(leaves.router)

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, delete, select
@@ -16,6 +16,7 @@ from models import (
     Roster,
     RosterConflict,
     RosterEntry,
+    RosterNotification,
 )
 from routers._crud import register_crud_routes
 
@@ -178,6 +179,25 @@ def approve_leave(leave_id: str, session: Session = Depends(get_session)):
 
             if primary_roster_result is None:
                 primary_roster_result = updated_roster
+
+            if db_roster.status == "PUBLISHED":
+                emp_obj = next((e for e in employees if e["id"] == leave.employee_id), None)
+                emp_name = emp_obj["name"] if emp_obj else leave.employee_id
+                session.add(
+                    RosterNotification(
+                        roster_id=roster_id,
+                        month=month_str,
+                        event_type="LEAVE_APPROVED",
+                        message=(
+                            f"Approved {leave.type} for {emp_name} ({leave.start_date} to {leave.end_date}) "
+                            f"on published roster {month_str}."
+                        ),
+                        actor_role="OPS_MANAGER",
+                        created_at=datetime.now(timezone.utc).isoformat(),
+                        is_read=False,
+                    )
+                )
+                session.commit()
 
     return {
         "leave": leave_dict,

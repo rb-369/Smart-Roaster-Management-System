@@ -50,32 +50,32 @@ const STATUS_META: Record<
   WORKING: {
     code: "W",
     label: "Working",
-    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
+    badgeClass: "bg-emerald-100 text-emerald-900 border-emerald-300 font-semibold hover:bg-emerald-200",
   },
   WEEKLY_OFF: {
     code: "WO",
     label: "Weekly Off",
-    badgeClass: "bg-slate-100 text-slate-600 border-neutral-200 hover:bg-slate-200",
+    badgeClass: "bg-slate-200 text-slate-800 border-slate-400 font-semibold hover:bg-slate-300",
   },
   PUBLIC_HOLIDAY: {
     code: "PH",
     label: "Public Holiday",
-    badgeClass: "bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100",
+    badgeClass: "bg-sky-600 text-white border-sky-700 font-semibold hover:bg-sky-700",
   },
   PLANNED_LEAVE: {
     code: "LV",
     label: "Planned Leave",
-    badgeClass: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
+    badgeClass: "bg-amber-500 text-white border-amber-600 font-semibold hover:bg-amber-600",
   },
   COMP_OFF: {
     code: "CO",
     label: "Comp-Off",
-    badgeClass: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+    badgeClass: "bg-purple-600 text-white border-purple-700 font-semibold hover:bg-purple-700",
   },
   BACKUP_COVERAGE: {
     code: "BK",
     label: "Backup Coverage",
-    badgeClass: "bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100",
+    badgeClass: "bg-teal-600 text-white border-teal-700 font-semibold hover:bg-teal-700",
   },
 };
 
@@ -277,7 +277,7 @@ export default function RosterViews({
                 {dates.map((d) => {
                   const dayNum = d.slice(8, 10);
                   const wd = WEEKDAY_LABELS[getPythonWeekday(d)];
-                  const isWeekend = wd === "Sat" || wd === "Sun";
+                  const isSunday = wd === "Sun";
                   const ph = holidayMap.get(d);
                   return (
                     <th
@@ -286,8 +286,8 @@ export default function RosterViews({
                       className={`px-1 py-2 text-center font-semibold border-r border-neutral-100 min-w-[38px] tabular-nums ${
                         ph
                           ? "bg-sky-50 text-sky-800"
-                          : isWeekend
-                          ? "bg-slate-100/70 text-slate-600"
+                          : isSunday
+                          ? "bg-slate-100/70 text-slate-700"
                           : "text-slate-700"
                       }`}
                     >
@@ -305,10 +305,13 @@ export default function RosterViews({
                 </th>
                 {dates.map((d) => {
                   const gaps = dailyGapCounts.get(d) || 0;
+                  const isSunday = WEEKDAY_LABELS[getPythonWeekday(d)] === "Sun";
                   return (
                     <th
                       key={`health-${d}`}
-                      className="px-1 py-2 text-center border-r border-neutral-200/70 tabular-nums"
+                      className={`px-1 py-2 text-center border-r border-neutral-200/70 tabular-nums ${
+                        isSunday ? "bg-slate-100/70" : ""
+                      }`}
                       title={gaps === 0 ? `${d}: All slots covered` : `${d}: ${gaps} coverage gap(s)`}
                     >
                       {gaps === 0 ? (
@@ -316,7 +319,7 @@ export default function RosterViews({
                           <Check className="w-3 h-3" />
                         </span>
                       ) : (
-                        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold">
+                        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-600 text-white text-[10px] font-bold">
                           {gaps}
                         </span>
                       )}
@@ -352,7 +355,7 @@ export default function RosterViews({
                     </tr>
                   )}
                   {grp.emps.map((emp) => (
-                    <tr key={emp.id} className="bg-white even:bg-neutral-50/50 hover:bg-blue-50/30 transition-colors">
+                    <tr key={emp.id} className="bg-white even:bg-neutral-50/40 hover:bg-slate-50 transition-colors">
                       <td className="sticky left-0 z-20 bg-white border-r-2 border-neutral-200 px-3 py-2">
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
@@ -379,13 +382,13 @@ export default function RosterViews({
                         const status = entry?.status || "WEEKLY_OFF";
                         const meta = STATUS_META[status];
                         const wd = WEEKDAY_LABELS[getPythonWeekday(d)];
-                        const isWeekend = wd === "Sat" || wd === "Sun";
+                        const isSunday = wd === "Sun";
                         const isPh = holidayMap.has(d);
                         return (
                           <td
                             key={`${emp.id}-${d}`}
                             className={`p-0.5 border-r border-neutral-200/70 text-center ${
-                              isPh ? "bg-sky-50/40" : isWeekend ? "bg-neutral-100/50" : ""
+                              isPh ? "bg-sky-50/40" : isSunday ? "bg-slate-100/70" : ""
                             }`}
                           >
                             <button
@@ -884,6 +887,15 @@ export default function RosterViews({
                 CO: empEntries.filter((x) => x.entry?.status === "COMP_OFF").length,
                 BK: empEntries.filter((x) => x.entry?.status === "BACKUP_COVERAGE").length,
               };
+              const sundayOffs = empEntries.filter(
+                (x) => getPythonWeekday(x.date) === 6 && x.entry?.status === "WEEKLY_OFF"
+              ).length;
+              const fairnessMeta =
+                sundayOffs >= 2
+                  ? { label: "Fair", cls: "bg-emerald-100 text-emerald-900 border-emerald-300" }
+                  : sundayOffs === 1
+                  ? { label: "Moderate", cls: "bg-amber-100 text-amber-900 border-amber-300" }
+                  : { label: "Low Sun Off", cls: "bg-rose-100 text-rose-800 border-rose-300" };
               const empAllocs = allocations.filter((a) => a.employee_id === emp.id);
               const assignedLabels = Array.from(
                 new Set(
@@ -917,6 +929,12 @@ export default function RosterViews({
                         Pref Off: {WEEKDAY_LABELS[emp.preferred_weekly_off] ?? "Sun"} ({emp.weekly_off_rule})
                       </div>
                     </div>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold whitespace-nowrap ${fairnessMeta.cls}`}
+                      title={`Fairness based on ${sundayOffs} Sunday weekly off(s) this month`}
+                    >
+                      Fairness: {fairnessMeta.label}
+                    </span>
                   </div>
 
                   {/* Assigned Brands */}
@@ -926,30 +944,34 @@ export default function RosterViews({
                   </div>
 
                   {/* Fairness Summary Pills */}
-                  <div className="grid grid-cols-6 gap-1.5 text-center text-[11px] tabular-nums">
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg py-1">
-                      <div className="font-bold text-emerald-800">{counts.W}</div>
-                      <div className="text-[10px] text-emerald-700">Work</div>
+                  <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] tabular-nums">
+                    <div className="bg-emerald-100 border border-emerald-300 rounded-lg py-1">
+                      <div className="font-bold text-emerald-900">{counts.W}</div>
+                      <div className="text-[10px] text-emerald-800">W</div>
                     </div>
-                    <div className="bg-slate-100 border border-neutral-200 rounded-lg py-1">
+                    <div className="bg-slate-200 border border-slate-400 rounded-lg py-1">
                       <div className="font-bold text-slate-800">{counts.WO}</div>
-                      <div className="text-[10px] text-slate-600">Off</div>
+                      <div className="text-[10px] text-slate-700">WO</div>
                     </div>
-                    <div className="bg-sky-50 border border-sky-200 rounded-lg py-1">
-                      <div className="font-bold text-sky-800">{counts.PH}</div>
-                      <div className="text-[10px] text-sky-700">PH</div>
+                    <div className="bg-sky-600 border border-sky-700 rounded-lg py-1 text-white">
+                      <div className="font-bold">{counts.PH}</div>
+                      <div className="text-[10px] text-sky-100">PH</div>
                     </div>
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg py-1">
-                      <div className="font-bold text-amber-800">{counts.LV}</div>
-                      <div className="text-[10px] text-amber-700">Leave</div>
+                    <div className="bg-amber-500 border border-amber-600 rounded-lg py-1 text-white">
+                      <div className="font-bold">{counts.LV}</div>
+                      <div className="text-[10px] text-amber-50">LV</div>
                     </div>
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg py-1">
-                      <div className="font-bold text-purple-800">{counts.CO}</div>
-                      <div className="text-[10px] text-purple-700">Comp</div>
+                    <div className="bg-purple-600 border border-purple-700 rounded-lg py-1 text-white">
+                      <div className="font-bold">{counts.CO}</div>
+                      <div className="text-[10px] text-purple-100">CO</div>
                     </div>
-                    <div className="bg-teal-50 border border-teal-200 rounded-lg py-1">
-                      <div className="font-bold text-teal-800">{counts.BK}</div>
-                      <div className="text-[10px] text-teal-700">Backup</div>
+                    <div className="bg-teal-600 border border-teal-700 rounded-lg py-1 text-white">
+                      <div className="font-bold">{counts.BK}</div>
+                      <div className="text-[10px] text-teal-100">BK</div>
+                    </div>
+                    <div className="bg-slate-100 border border-slate-300 rounded-lg py-1">
+                      <div className="font-bold text-slate-900">{sundayOffs}</div>
+                      <div className="text-[10px] text-slate-600">Sun Off</div>
                     </div>
                   </div>
 

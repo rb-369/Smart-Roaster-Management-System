@@ -115,3 +115,15 @@ class RosterConflict(SQLModel, table=True):
     message: str
     suggested_resolutions: List[Dict[str, Any]] = Field(default=[], sa_column=Column(JSON))
     resolved: bool = False
+
+
+class RosterNotification(SQLModel, table=True):
+    __tablename__ = "roster_notifications"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    roster_id: str
+    month: str
+    event_type: str  # POD_APPROVED, PUBLISHED, ENTRY_EDITED, BACKUP_ASSIGNED, LEAVE_APPROVED
+    message: str
+    actor_role: str = "OPS_MANAGER"
+    created_at: str
+    is_read: bool = False

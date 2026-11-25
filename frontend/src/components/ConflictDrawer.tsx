@@ -9,12 +9,15 @@ import {
   UserCheck,
   Loader2,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import {
   Conflict,
+  ExplainConflictResponse,
   MonthlyRosterResponse,
   SuggestedResolution,
   assignBackup,
+  explainConflict,
 } from "@/lib/api";
 
 interface ConflictDrawerProps {
@@ -39,6 +42,8 @@ export default function ConflictDrawer({
   const [assigningKey, setAssigningKey] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [explainingKey, setExplainingKey] = useState<string | null>(null);
+  const [explanations, setExplanations] = useState<Record<string, ExplainConflictResponse>>({});
 
   // Sync filter when opened with a specific severity
   React.useEffect(() => {
@@ -103,6 +108,19 @@ export default function ConflictDrawer({
       setErrorMsg(err instanceof Error ? err.message : "Failed to assign backup");
     } finally {
       setAssigningKey(null);
+    }
+  };
+
+  const handleExplainConflict = async (conflict: Conflict, cardKey: string) => {
+    try {
+      setExplainingKey(cardKey);
+      setErrorMsg(null);
+      const res = await explainConflict(month, conflict);
+      setExplanations((prev) => ({ ...prev, [cardKey]: res }));
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to generate AI explanation");
+    } finally {
+      setExplainingKey(null);
     }
   };
 
@@ -205,9 +223,12 @@ export default function ConflictDrawer({
           ) : (
             filteredConflicts.map((conf, idx) => {
               const isHard = conf.severity === "HARD";
+              const cardKey = `${conf.date}-${conf.conflict_type}-${conf.brand_id}-${conf.process_id}-${conf.employee_id}-${idx}`;
+              const explanation = explanations[cardKey];
+              const isExplaining = explainingKey === cardKey;
               return (
                 <div
-                  key={`${conf.date}-${conf.conflict_type}-${conf.brand_id}-${conf.process_id}-${conf.employee_id}-${idx}`}
+                  key={cardKey}
                   className={`bg-white border rounded-xl p-4 shadow-sm ${
                     isHard ? "border-rose-200" : "border-amber-200"
                   }`}
@@ -232,9 +253,24 @@ export default function ConflictDrawer({
                         {conf.conflict_type.replace(/_/g, " ")}
                       </span>
                     </div>
-                    <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 tabular-nums">
-                      {conf.date}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={isExplaining}
+                        onClick={() => handleExplainConflict(conf, cardKey)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-[11px] font-semibold transition-colors disabled:opacity-50"
+                      >
+                        {isExplaining ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-3 h-3" />
+                        )}
+                        AI Explain
+                      </button>
+                      <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 tabular-nums">
+                        {conf.date}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Tags */}
@@ -259,6 +295,31 @@ export default function ConflictDrawer({
                   </div>
 
                   <p className="mt-2.5 text-sm text-slate-800 leading-relaxed">{conf.message}</p>
+
+                  {/* AI Explanation Panel */}
+                  {explanation && (
+                    <div className="mt-3 rounded-xl bg-indigo-50/70 border border-indigo-200 p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-900">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                          AI Root-Cause &amp; Resolution
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white border border-indigo-200 text-indigo-700">
+                          {explanation.provider}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-800 leading-relaxed">
+                        {explanation.explanation}
+                      </p>
+                      {explanation.action_steps && explanation.action_steps.length > 0 && (
+                        <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-700">
+                          {explanation.action_steps.map((step, sIdx) => (
+                            <li key={sIdx}>{step}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
 
                   {/* Recommended Backups */}
                   {conf.suggested_resolutions && conf.suggested_resolutions.length > 0 && (

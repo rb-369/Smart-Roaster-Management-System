@@ -204,6 +204,45 @@ export interface LeaveApprovalResponse {
   kpis?: KPIStats;
 }
 
+export type PlanStrategy = "COVERAGE_FIRST" | "PREFERENCE_FIRST" | "BALANCED";
+
+export interface PlanComparisonItem {
+  strategy: PlanStrategy;
+  label?: string;
+  description?: string;
+  coverage_percentage: number;
+  covered_slots: number;
+  total_operating_slots?: number;
+  hard_conflicts_count: number;
+  soft_conflicts_count: number;
+}
+
+export interface ComparePlansResponse {
+  month: string;
+  plans: PlanComparisonItem[];
+}
+
+export type PublishRosterResponse =
+  | { requiresForce: false; roster: MonthlyRosterResponse }
+  | { requiresForce: true; hardConflictsCount: number; detail: string };
+
+export interface NotificationItem {
+  id: string;
+  month?: string;
+  title?: string;
+  message: string;
+  created_at: string;
+  read: boolean;
+  actor?: string;
+  action_type?: string;
+}
+
+export interface ExplainConflictResponse {
+  explanation: string;
+  action_steps: string[];
+  provider: string;
+}
+
 // ─── HTTP Helper ──────────────────────────────────────────────────────────────
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -284,6 +323,99 @@ export async function assignBackup(
 
 export function getCsvExportUrl(month: string = "2026-12"): string {
   return `${API_BASE_URL}/api/rosters/${encodeURIComponent(month)}/export.csv`;
+}
+
+export function getExcelExportUrl(month: string = "2026-12"): string {
+  return `${API_BASE_URL}/api/rosters/${encodeURIComponent(month)}/export.xlsx`;
+}
+
+export async function comparePlans(month: string): Promise<ComparePlansResponse> {
+  const data = await request<ComparePlansResponse | PlanComparisonItem[]>(
+    `/api/rosters/${encodeURIComponent(month)}/compare-plans`,
+    { method: "POST" }
+  );
+  if (Array.isArray(data)) {
+    return { month, plans: data };
+  }
+  return data;
+}
+
+export async function applyPlan(
+  month: string,
+  strategy: PlanStrategy
+): Promise<MonthlyRosterResponse> {
+  return request(
+    `/api/rosters/${encodeURIComponent(month)}/apply-plan?strategy=${encodeURIComponent(strategy)}`,
+    { method: "POST" }
+  );
+}
+
+export async function approvePodRoster(month: string): Promise<MonthlyRosterResponse> {
+  return request(`/api/rosters/${encodeURIComponent(month)}/approve-pod`, {
+    method: "POST",
+  });
+}
+
+export async function publishRoster(
+  month: string,
+  force: boolean = false
+): Promise<PublishRosterResponse> {
+  const qs = force ? "?force=true" : "";
+  const res = await fetch(
+    `${API_BASE_URL}/api/rosters/${encodeURIComponent(month)}/publish${qs}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+
+  if (res.status === 409) {
+    const errorData = await res.json().catch(() => ({}));
+    return {
+      requiresForce: true,
+      hardConflictsCount:
+        typeof errorData.hard_conflicts_count === "number"
+          ? errorData.hard_conflicts_count
+          : 1,
+      detail:
+        errorData.detail ||
+        "Roster has unresolved HARD conflicts. Override required to publish.",
+    };
+  }
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const err = new Error(
+      errorData.detail || `Request failed (${res.status}): ${res.statusText}`
+    ) as Error & { status?: number };
+    err.status = res.status;
+    throw err;
+  }
+
+  const roster = (await res.json()) as MonthlyRosterResponse;
+  return { requiresForce: false, roster };
+}
+
+export async function fetchNotifications(month: string): Promise<NotificationItem[]> {
+  const data = await request<NotificationItem[] | { notifications: NotificationItem[] }>(
+    `/api/notifications?month=${encodeURIComponent(month)}`
+  );
+  if (Array.isArray(data)) return data;
+  return data.notifications || [];
+}
+
+export async function markNotificationsRead(): Promise<{ status?: string }> {
+  return request("/api/notifications/mark-read", { method: "POST" });
+}
+
+export async function explainConflict(
+  month: string,
+  conflict: Conflict
+): Promise<ExplainConflictResponse> {
+  return request(`/api/rosters/${encodeURIComponent(month)}/explain-conflict`, {
+    method: "POST",
+    body: JSON.stringify(conflict),
+  });
 }
 
 // ─── Pods CRUD ────────────────────────────────────────────────────────────────
