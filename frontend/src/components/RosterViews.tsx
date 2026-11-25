@@ -471,35 +471,51 @@ export default function RosterViews({
 
   return (
     <div className="space-y-4">
-      {/* 5 Stakeholder View Sub-Tabs */}
-      <div className="flex flex-wrap items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1.5 shadow-sm">
-        {(
-          [
-            { id: "company", label: "Company-wide Matrix", icon: Building2 },
-            { id: "pod", label: "Pod-wise View", icon: Layers },
-            { id: "brand", label: "Brand-wise View", icon: Tag },
-            { id: "process", label: "Process-wise View", icon: GitBranch },
-            { id: "employee", label: "Employee-wise View", icon: User },
-          ] as const
-        ).map((tab) => {
-          const Icon = tab.icon;
-          const active = activeView === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveView(tab.id)}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                active
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {tab.label}
-            </button>
-          );
-        })}
+      {/* 5 Stakeholder View Sub-Tabs + Status Legend */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white border border-neutral-200 rounded-2xl p-2">
+        <div className="flex flex-wrap items-center gap-1">
+          {(
+            [
+              { id: "company", label: "Company-wide Matrix", icon: Building2 },
+              { id: "pod", label: "Pod-wise View", icon: Layers },
+              { id: "brand", label: "Brand-wise View", icon: Tag },
+              { id: "process", label: "Process-wise View", icon: GitBranch },
+              { id: "employee", label: "Employee-wise View", icon: User },
+            ] as const
+          ).map((tab) => {
+            const Icon = tab.icon;
+            const active = activeView === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveView(tab.id)}
+                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
+                  active
+                    ? "bg-neutral-900 text-white"
+                    : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Always-Visible Compact Status Legend */}
+        <div className="flex flex-wrap items-center gap-2 px-2 py-1 text-[11px] text-neutral-600 border-t lg:border-t-0 lg:border-l border-neutral-100 pt-2 lg:pt-1 lg:pl-3">
+          {(Object.entries(STATUS_META) as [EmployeeStatusType, (typeof STATUS_META)[EmployeeStatusType]][]).map(
+            ([key, meta]) => (
+              <span key={key} className="inline-flex items-center gap-1">
+                <span className={`px-1.5 py-0.5 rounded border text-[10px] font-bold ${meta.badgeClass}`}>
+                  {meta.code}
+                </span>
+                <span className="hidden xl:inline text-neutral-500">{meta.label}</span>
+              </span>
+            )
+          )}
+        </div>
       </div>
 
       {/* 1. COMPANY-WIDE MATRIX */}
@@ -515,10 +531,10 @@ export default function RosterViews({
                   key={p.id}
                   type="button"
                   onClick={() => setSelectedPodId(p.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                     activePod?.id === p.id
-                      ? "bg-indigo-600 text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      ? "bg-neutral-900 text-white"
+                      : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
                   }`}
                 >
                   {p.name}
@@ -757,8 +773,8 @@ export default function RosterViews({
                 onClick={() => setSelectedProcessId(proc.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                   selectedProcessId === proc.id
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    ? "bg-neutral-900 text-white"
+                    : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
                 }`}
               >
                 {proc.code} — {proc.name}

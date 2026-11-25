@@ -110,26 +110,26 @@ export default function ConflictDrawer({
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/30 backdrop-blur-[1px] transition-opacity"
+        className="fixed inset-0 bg-neutral-950/25 backdrop-blur-[2px] transition-opacity"
         onClick={onClose}
       />
 
       {/* Drawer Panel */}
-      <aside className="relative z-10 w-full max-w-2xl bg-[#F8FAFC] border-l border-slate-200 shadow-2xl flex flex-col h-full">
+      <aside className="relative z-10 w-full max-w-2xl bg-neutral-50 border-l border-neutral-200 shadow-2xl flex flex-col h-full">
         {/* Header */}
-        <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center justify-between">
+        <div className="bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-bold tracking-tight text-neutral-950">
               Conflict &amp; Resolution Center
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-neutral-500 mt-0.5">
               {hardCount} Hard Conflicts (coverage gaps) &middot; {softCount} Soft Warnings (off preferences)
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+            className="p-2 rounded-full text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100 transition-colors"
             aria-label="Close Conflict Drawer"
           >
             <X className="w-5 h-5" />
@@ -137,21 +137,21 @@ export default function ConflictDrawer({
         </div>
 
         {/* Filter Bar */}
-        <div className="bg-white border-b border-slate-200 px-5 py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="bg-white border-b border-neutral-200 px-6 py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-1.5">
             {(["ALL", "HARD", "SOFT"] as const).map((sev) => (
               <button
                 key={sev}
                 type="button"
                 onClick={() => setSeverityFilter(sev)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                   severityFilter === sev
                     ? sev === "HARD"
-                      ? "bg-rose-600 text-white"
+                      ? "bg-red-600 text-white"
                       : sev === "SOFT"
                       ? "bg-amber-500 text-white"
-                      : "bg-indigo-600 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      : "bg-neutral-900 text-white"
+                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                 }`}
               >
                 {sev === "ALL"
@@ -164,13 +164,13 @@ export default function ConflictDrawer({
           </div>
 
           <div className="relative flex-1 sm:max-w-xs">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter brand, employee, date..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-full text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/15"
             />
           </div>
         </div>

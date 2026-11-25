@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   LayoutGrid,
   Loader2,
+  Info,
 } from "lucide-react";
 import {
   Allocation,
@@ -164,49 +165,48 @@ export default function HomePage() {
   const hardConflictsCount = rosterData?.kpis?.hard_conflicts_count ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A]">
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+    <div className="min-h-screen bg-white text-[#0a0a0a]">
+      {/* Frosted Editorial Light Header */}
+      <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-neutral-200">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-8 py-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Brand & Status */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-sm">
-                <Layers className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
-                  Smart Roster Management System
+          <div className="flex items-center gap-3.5">
+            <div className="w-9 h-9 rounded-xl bg-neutral-900 text-white flex items-center justify-center shadow-xs">
+              <Layers className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight text-neutral-950">
+                  Smart Roster
                 </h1>
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span>Enterprise Operations Command Center</span>
-                  <span>&middot;</span>
-                  <span className="inline-flex items-center gap-1.5 font-medium">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        healthStatus === "connected"
-                          ? "bg-emerald-500"
-                          : healthStatus === "checking"
-                          ? "bg-amber-400"
-                          : "bg-rose-500"
-                      }`}
-                    />
-                    {healthStatus === "connected"
-                      ? "Engine Online"
-                      : healthStatus === "checking"
-                      ? "Connecting..."
-                      : "Engine Offline"}
-                  </span>
-                </div>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-neutral-100 text-neutral-700 border border-neutral-200">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      healthStatus === "connected"
+                        ? "bg-emerald-500"
+                        : healthStatus === "checking"
+                        ? "bg-amber-400"
+                        : "bg-red-500"
+                    }`}
+                  />
+                  {healthStatus === "connected"
+                    ? "Engine Ready"
+                    : healthStatus === "checking"
+                    ? "Connecting"
+                    : "Offline"}
+                </span>
               </div>
+              <p className="text-xs text-neutral-500">
+                Demand-vs-supply scheduling &amp; conflict resolution for D2C CX teams
+              </p>
             </div>
           </div>
 
-          {/* Controls */}
+          {/* Primary Controls */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Month Selector */}
-            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs">
-              <Calendar className="w-3.5 h-3.5 text-slate-500 mr-1.5" />
+            <div className="flex items-center bg-neutral-50 border border-neutral-200 rounded-full px-3 py-1.5 text-xs">
+              <Calendar className="w-3.5 h-3.5 text-neutral-500 mr-1.5" />
               <input
                 type="month"
                 value={month}
@@ -217,7 +217,7 @@ export default function HomePage() {
                     loadOrGenerateRoster(val);
                   }
                 }}
-                className="bg-transparent text-slate-900 font-semibold focus:outline-none tabular-nums"
+                className="bg-transparent text-neutral-900 font-semibold focus:outline-none tabular-nums"
               />
             </div>
 
@@ -226,7 +226,7 @@ export default function HomePage() {
               type="button"
               onClick={handleGenerate}
               disabled={loadingRoster || resetting}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold shadow-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 text-white text-xs font-semibold transition-colors"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingRoster ? "animate-spin" : ""}`} />
               {loadingRoster ? "Solving..." : "Generate Roster"}
@@ -237,10 +237,10 @@ export default function HomePage() {
               type="button"
               onClick={handleResetDemo}
               disabled={resetting || loadingRoster}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs font-medium transition-colors disabled:opacity-50"
             >
               <RotateCcw className={`w-3.5 h-3.5 ${resetting ? "animate-spin" : ""}`} />
-              Reset Demo Data
+              Reset Demo
             </button>
 
             {/* Export CSV */}
@@ -248,7 +248,7 @@ export default function HomePage() {
               href={getCsvExportUrl(month)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs font-medium transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
               Export CSV
@@ -258,10 +258,10 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => openConflictsDrawer("ALL")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold border transition-colors ${
                 hardConflictsCount > 0
-                  ? "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100"
-                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                  ? "bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                  : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-100"
               }`}
             >
               <ShieldAlert className="w-3.5 h-3.5" />
@@ -270,40 +270,57 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Primary Section Navigation */}
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 flex items-center gap-4 border-t border-slate-100">
-          <button
-            type="button"
-            onClick={() => setMainSection("workspace")}
-            className={`inline-flex items-center gap-2 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
-              mainSection === "workspace"
-                ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-            Roster Workspace (5 Views)
-          </button>
-          <button
-            type="button"
-            onClick={() => setMainSection("setup")}
-            className={`inline-flex items-center gap-2 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
-              mainSection === "setup"
-                ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Settings className="w-3.5 h-3.5" />
-            Operations Setup (CRUD)
-          </button>
+        {/* Clean Pill Navigation Bar */}
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-8 pb-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="inline-flex items-center p-1 rounded-full bg-neutral-100 border border-neutral-200/80">
+            <button
+              type="button"
+              onClick={() => setMainSection("workspace")}
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                mainSection === "workspace"
+                  ? "bg-white text-neutral-950 shadow-xs"
+                  : "text-neutral-600 hover:text-neutral-950"
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              Roster Workspace (5 Views)
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainSection("setup")}
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                mainSection === "setup"
+                  ? "bg-white text-neutral-950 shadow-xs"
+                  : "text-neutral-600 hover:text-neutral-950"
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              Operations Setup (CRUD)
+            </button>
+          </div>
+
+          <div className="hidden md:flex items-center gap-2 text-[11px] text-neutral-500">
+            <Info className="w-3.5 h-3.5 text-neutral-400" />
+            <span>
+              Tip: Click any grid cell to override status, or open{" "}
+              <button
+                type="button"
+                onClick={() => openConflictsDrawer("HARD")}
+                className="font-semibold text-neutral-800 underline underline-offset-2 hover:text-neutral-950"
+              >
+                Conflicts
+              </button>{" "}
+              for 1-click backup resolution.
+            </span>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-8 py-6 space-y-6">
         {errorMsg && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2.5">
-            <ShieldAlert className="w-4 h-4 text-rose-600 flex-shrink-0" />
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-2xl text-xs font-medium flex items-center gap-2.5">
+            <ShieldAlert className="w-4 h-4 text-red-600 flex-shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
@@ -347,21 +364,21 @@ export default function HomePage() {
               onRosterUpdated={setRosterData}
             />
           ) : (
-            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
+            <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-12 text-center">
               {loadingRoster ? (
-                <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-600">
-                  <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                <div className="inline-flex items-center gap-2 text-sm font-medium text-neutral-600">
+                  <Loader2 className="w-4 h-4 animate-spin text-neutral-900" />
                   Loading monthly roster for {month}...
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-neutral-900">
                     No roster loaded for {month}
                   </p>
                   <button
                     type="button"
                     onClick={handleGenerate}
-                    className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                    className="px-5 py-2.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold transition-colors"
                   >
                     Generate Roster ({month})
                   </button>

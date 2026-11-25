@@ -186,8 +186,16 @@ export interface AssignBackupPayload {
   notes?: string | null;
 }
 
+export interface LeaveApprovalImpact {
+  hard_conflicts_before: number;
+  hard_conflicts_after: number;
+  new_conflicts: Conflict[];
+  affected_brands: string[];
+}
+
 export interface LeaveApprovalResponse {
   leave?: LeaveAndCompOff;
+  impact?: LeaveApprovalImpact;
   message?: string;
   impact_summary?: string;
   new_hard_conflicts_count?: number;

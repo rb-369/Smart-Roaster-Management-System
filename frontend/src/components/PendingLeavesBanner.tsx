@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { CalendarClock, CheckCircle2, Loader2, XCircle, Sparkles, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, ShieldAlert, X } from "lucide-react";
 import {
   Employee,
   LeaveAndCompOff,
   MonthlyRosterResponse,
   approveLeave,
   rejectLeave,
-  fetchMonthlyRoster,
 } from "@/lib/api";
 
 interface PendingLeavesBannerProps {
@@ -25,113 +24,112 @@ export default function PendingLeavesBanner({
   month,
   leaves,
   employees,
-  currentRoster,
   onRosterUpdated,
   onLeavesUpdated,
   onOpenConflicts,
 }: PendingLeavesBannerProps) {
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [impactToast, setImpactToast] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [impactBanner, setImpactBanner] = useState<{
+    message: string;
+    newHardCount: number;
+    affectedBrands: string[];
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const pendingLeaves = leaves.filter((l) => l.status === "PENDING");
+  const empMap = new Map(employees.map((e) => [e.id, e]));
 
-  if (pendingLeaves.length === 0 && !impactToast) {
+  if (pendingLeaves.length === 0 && !impactBanner && !error) {
     return null;
   }
 
-  const empMap = new Map(employees.map((e) => [e.id, e]));
-
   const handleApprove = async (leave: LeaveAndCompOff) => {
     try {
-      setProcessingId(leave.id);
-      setErrorMsg(null);
-      const prevHardCount = currentRoster?.kpis?.hard_conflicts_count ?? 0;
-      const prevHardKeys = new Set(
-        (currentRoster?.conflicts || [])
-          .filter((c) => c.severity === "HARD")
-          .map((c) => `${c.date}|${c.brand_id}|${c.process_id}|${c.conflict_type}`)
-      );
-
+      setBusyId(leave.id);
+      setError(null);
       const res = await approveLeave(leave.id, month);
-      let updatedRoster: MonthlyRosterResponse | null = res.roster || null;
-
-      if (!updatedRoster) {
-        updatedRoster = await fetchMonthlyRoster(month);
+      if (res.roster) {
+        onRosterUpdated(res.roster);
       }
-
-      onRosterUpdated(updatedRoster);
       await onLeavesUpdated();
 
-      // Build human-readable impact summary
-      let summary = res.impact_summary;
-      if (!summary) {
-        const newHardConflicts = (updatedRoster.conflicts || []).filter(
-          (c) =>
-            c.severity === "HARD" &&
-            !prevHardKeys.has(`${c.date}|${c.brand_id}|${c.process_id}|${c.conflict_type}`)
-        );
-        const delta = updatedRoster.kpis.hard_conflicts_count - prevHardCount;
-        const affectedBrands = Array.from(
-          new Set(newHardConflicts.map((c) => c.brand_id || c.brand_name).filter(Boolean))
-        );
-        if (newHardConflicts.length > 0) {
-          summary = `Approved ${leave.id} — flagged ${newHardConflicts.length} new hard conflict${
-            newHardConflicts.length === 1 ? "" : "s"
-          }${affectedBrands.length > 0 ? ` on ${affectedBrands.join(", ")}` : ""}`;
-        } else if (delta > 0) {
-          summary = `Approved ${leave.id} — flagged ${delta} new hard conflict${delta === 1 ? "" : "s"}`;
-        } else {
-          summary = `Approved ${leave.id} (${leave.employee_id}) — zero new coverage gaps created.`;
-        }
-      }
+      const newConflicts = res.impact?.new_conflicts ?? [];
+      const delta = res.impact
+        ? res.impact.hard_conflicts_after - res.impact.hard_conflicts_before
+        : res.new_hard_conflicts_count ?? 0;
+      const brands = res.impact?.affected_brands ?? [];
+      setImpactBanner({
+        message: `Approved ${leave.id} (${leave.employee_id}) — ${
+          newConflicts.length
+        } new conflict(s) detected (${delta >= 0 ? `+${delta}` : delta} hard).`,
+        newHardCount: newConflicts.filter((c) => c.severity === "HARD").length,
+        affectedBrands: brands,
+      });
 
-      setImpactToast(summary);
-      onOpenConflicts("HARD");
+      if (newConflicts.length > 0) {
+        onOpenConflicts("HARD");
+      }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to approve leave";
-      setErrorMsg(msg);
+      setError(err instanceof Error ? err.message : "Failed to approve leave.");
     } finally {
-      setProcessingId(null);
+      setBusyId(null);
     }
   };
 
   const handleReject = async (leave: LeaveAndCompOff) => {
     try {
-      setProcessingId(leave.id);
-      setErrorMsg(null);
+      setBusyId(leave.id);
+      setError(null);
       await rejectLeave(leave.id);
       await onLeavesUpdated();
-      setImpactToast(`Rejected leave request ${leave.id} (${leave.employee_id}).`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to reject leave";
-      setErrorMsg(msg);
+      setError(err instanceof Error ? err.message : "Failed to reject leave.");
     } finally {
-      setProcessingId(null);
+      setBusyId(null);
     }
   };
 
   return (
-    <div className="space-y-2.5">
-      {impactToast && (
-        <div className="flex items-center justify-between gap-3 bg-indigo-50 border border-indigo-200 text-indigo-900 px-4 py-3 rounded-xl shadow-sm">
-          <div className="flex items-center gap-2.5 text-sm font-medium">
-            <Sparkles className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-            <span>{impactToast}</span>
+    <div className="space-y-3">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-2xl text-xs font-medium flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600" />
+            <span>{error}</span>
+          </div>
+          <button type="button" onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {impactBanner && (
+        <div className="bg-white border border-red-200 px-4 py-3 rounded-2xl flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="p-1.5 rounded-lg bg-red-50 text-red-600">
+              <ShieldAlert className="w-4 h-4" />
+            </span>
+            <div className="text-xs text-neutral-800">
+              <span className="font-semibold text-neutral-950">{impactBanner.message}</span>
+              {impactBanner.affectedBrands.length > 0 && (
+                <span className="ml-2 text-neutral-500">
+                  Impacted: {impactBanner.affectedBrands.join(", ")}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => onOpenConflicts("HARD")}
-              className="text-xs font-semibold text-indigo-700 hover:text-indigo-900 underline"
+              className="px-3 py-1.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold transition-colors"
             >
-              View Conflicts
+              Resolve in Conflict Drawer
             </button>
             <button
               type="button"
-              onClick={() => setImpactToast(null)}
-              className="p-1 rounded hover:bg-indigo-100 text-indigo-600"
-              aria-label="Dismiss impact message"
+              onClick={() => setImpactBanner(null)}
+              className="p-1 text-neutral-400 hover:text-neutral-700"
             >
               <X className="w-4 h-4" />
             </button>
@@ -139,85 +137,67 @@ export default function PendingLeavesBanner({
         </div>
       )}
 
-      {errorMsg && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-2.5 rounded-xl text-sm">
-          {errorMsg}
-        </div>
-      )}
-
       {pendingLeaves.length > 0 && (
-        <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
-                <CalendarClock className="w-4 h-4" />
+        <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="p-2 rounded-xl bg-amber-100 text-amber-800 mt-0.5">
+                <Clock className="w-4 h-4" />
               </span>
               <div>
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Pending Leave &amp; Comp-Off Requests ({pendingLeaves.length})
-                </h3>
-                <p className="text-xs text-slate-600">
-                  Approve to run live incremental re-validation against the active roster without rebuilding the month.
-                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-neutral-950">
+                    Pending Leave Request{pendingLeaves.length > 1 ? "s" : ""} ({pendingLeaves.length})
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800">
+                    Live Impact Check
+                  </span>
+                </div>
+                <div className="mt-1.5 space-y-1.5">
+                  {pendingLeaves.map((leave) => {
+                    const emp = empMap.get(leave.employee_id);
+                    return (
+                      <div
+                        key={leave.id}
+                        className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-600"
+                      >
+                        <span className="font-semibold text-neutral-900">
+                          {emp ? `${emp.name} (${emp.id})` : leave.employee_id}
+                        </span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded-full border border-neutral-200 text-neutral-700">
+                          {leave.id} &middot; {leave.start_date} → {leave.end_date}
+                        </span>
+                        <span className="text-neutral-500">{leave.reason || leave.type}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            {pendingLeaves.map((leave) => {
-              const emp = empMap.get(leave.employee_id);
-              const isBusy = processingId === leave.id;
-              return (
-                <div
-                  key={leave.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-amber-200/80 rounded-lg px-3.5 py-2.5"
-                >
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-mono text-xs font-semibold">
-                      {leave.id}
-                    </span>
-                    <span className="font-semibold text-slate-900">
-                      {emp ? emp.name : leave.employee_id}
-                    </span>
-                    <span className="text-xs text-slate-500 font-mono">({leave.employee_id})</span>
-                    <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
-                      {leave.type.replace(/_/g, " ")}
-                    </span>
-                    <span className="text-xs font-medium text-slate-700 tabular-nums">
-                      {leave.start_date} → {leave.end_date}
-                    </span>
-                    {leave.reason && (
-                      <span className="text-xs text-slate-500 italic">— {leave.reason}</span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
-                      type="button"
-                      disabled={isBusy}
-                      onClick={() => handleReject(leave)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium disabled:opacity-50"
-                    >
-                      <XCircle className="w-3.5 h-3.5 text-slate-500" />
-                      Reject
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isBusy}
-                      onClick={() => handleApprove(leave)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm disabled:opacity-50"
-                    >
-                      {isBusy ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      )}
-                      Approve &amp; Check Impact
-                    </button>
-                  </div>
+            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+              {pendingLeaves.map((leave) => (
+                <div key={leave.id} className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={busyId === leave.id}
+                    onClick={() => handleApprove(leave)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 text-white text-xs font-semibold transition-colors"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {busyId === leave.id ? "Checking Impact..." : `Approve ${leave.id} & Check Impact`}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyId === leave.id}
+                    onClick={() => handleReject(leave)}
+                    className="px-3.5 py-2 rounded-full bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs font-medium transition-colors"
+                  >
+                    Reject
+                  </button>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
         </div>
       )}
