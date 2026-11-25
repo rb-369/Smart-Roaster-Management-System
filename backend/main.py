@@ -2,14 +2,20 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import init_db
+from sqlmodel import Session, select
+from database import init_db, engine
+from models import Employee
+from seed import seed_database
 from routers import entities, leaves, rosters
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB tables on startup
+    # Initialize DB tables on startup and auto-seed if empty
     init_db()
+    with Session(engine) as session:
+        if session.exec(select(Employee)).first() is None:
+            seed_database()
     yield
 
 
