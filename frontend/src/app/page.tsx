@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  BookOpen,
   Calendar,
   Download,
   FileSpreadsheet,
@@ -60,6 +61,7 @@ import RosterViews from "@/components/RosterViews";
 import ConflictDrawer from "@/components/ConflictDrawer";
 import ManagementTabs, { ManagementSubTab } from "@/components/ManagementTabs";
 import PlanComparisonModal from "@/components/PlanComparisonModal";
+import EvaluatorGuideModal from "@/components/EvaluatorGuideModal";
 import SmartRosterLogo from "@/components/SmartRosterLogo";
 
 function formatNotificationTime(iso: string): string {
@@ -105,6 +107,7 @@ export default function HomePage() {
 
   const [userRole, setUserRole] = useState<"OPS_MANAGER" | "POD_LEAD">("OPS_MANAGER");
   const [compareModalOpen, setCompareModalOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [approvingPod, setApprovingPod] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishOverrideModal, setPublishOverrideModal] = useState<{
@@ -384,6 +387,17 @@ export default function HomePage() {
             >
               <RotateCcw className={`w-3.5 h-3.5 ${resetting ? "animate-spin" : ""}`} />
               {resetting ? "Resetting..." : "Reset Demo"}
+            </button>
+
+            {/* Quick Guide Modal Trigger */}
+            <button
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs font-medium transition-colors"
+              title="Open Quick Guide"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+              Quick Guide
             </button>
 
             {/* Export CSV */}
@@ -833,6 +847,9 @@ export default function HomePage() {
           </div>
         </div>
       )}
+      {/* Quick Guide Modal */}
+      <EvaluatorGuideModal open={guideOpen} onClose={() => setGuideOpen(false)} />
+
       {/* Read-Only Roster Copilot */}
       <RosterCopilot month={month} employees={employees} brands={brands} />
     </div>
