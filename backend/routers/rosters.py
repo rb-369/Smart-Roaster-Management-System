@@ -1,3 +1,4 @@
+import asyncio
 import csv
 import io
 import json
@@ -752,8 +753,8 @@ def _deterministic_explain(payload: ExplainConflictRequest) -> Dict[str, Any]:
     }
 
 
-def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequest) -> Dict[str, Any]:
-    """Try OpenRouter -> Gemini -> NVIDIA NIM (timeout=8.0s each), falling back deterministically."""
+async def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequest) -> Dict[str, Any]:
+    """Try OpenRouter -> Gemini -> NVIDIA NIM (AsyncClient timeout=8.0s), falling back deterministically."""
     prompt = (
         f"You are an operations workforce planning assistant for roster month {month}.\n"
         f"Conflict: {payload.severity} {payload.conflict_type} on {payload.date}.\n"
@@ -770,8 +771,8 @@ def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequest) -
     if openrouter_key:
         for model_name in ("nvidia/nemotron-3-ultra-550b-a55b:free", "openrouter/free"):
             try:
-                with httpx.Client(timeout=8.0) as client:
-                    resp = client.post(
+                async with httpx.AsyncClient(timeout=8.0) as client:
+                    resp = await client.post(
                         "https://openrouter.ai/api/v1/chat/completions",
                         headers={
                             "Authorization": f"Bearer {openrouter_key}",
@@ -789,15 +790,15 @@ def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequest) -
                         if parsed:
                             parsed["provider"] = f"OpenRouter ({model_name})"
                             return parsed
-            except Exception:
+            except (httpx.TimeoutException, Exception):
                 continue
 
     # 2. Gemini
     gemini_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if gemini_key:
         try:
-            with httpx.Client(timeout=8.0) as client:
-                resp = client.post(
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.post(
                     f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}",
                     headers={"Content-Type": "application/json"},
                     json={"contents": [{"parts": [{"text": prompt}]}]},
@@ -808,15 +809,15 @@ def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequest) -
                     if parsed:
                         parsed["provider"] = "Gemini (gemini-2.0-flash)"
                         return parsed
-        except Exception:
+        except (httpx.TimeoutException, Exception):
             pass
 
     # 3. NVIDIA NIM
     nvidia_key = os.environ.get("NVIDIA_API_KEY", "").strip()
     if nvidia_key:
         try:
-            with httpx.Client(timeout=8.0) as client:
-                resp = client.post(
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.post(
                     "https://integrate.api.nvidia.com/v1/chat/completions",
                     headers={
                         "Authorization": f"Bearer {nvidia_key}",
@@ -834,7 +835,7 @@ def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequest) -
                     if parsed:
                         parsed["provider"] = "NVIDIA NIM (llama-3.1-nemotron-70b-instruct)"
                         return parsed
-        except Exception:
+        except (httpx.TimeoutException, Exception):
             pass
 
     # 4. Deterministic Fallback
@@ -842,13 +843,13 @@ def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequest) -
 
 
 @router.post("/{month}/explain-conflict")
-def explain_conflict(
+async def explain_conflict(
     payload: ExplainConflictRequest,
     month: str = Path(..., pattern=r"^\d{4}-\d{2}$"),
 ):
     """
     Explain a roster conflict and suggest concrete action steps using AI providers
-    (OpenRouter -> Gemini -> NVIDIA NIM) with an in-memory cache and deterministic fallback.
+    (OpenRouter -> Gemini -> NVIDIA NIM) with a hard 8s timeout, in-memory cache, and deterministic fallback.
     """
     cache_key = (
         month,
@@ -863,7 +864,10 @@ def explain_conflict(
     if cached is not None:
         return dict(cached)
 
-    result = _resolve_conflict_explanation(month, payload)
+    try:
+        result = await asyncio.wait_for(_resolve_conflict_explanation(month, payload), timeout=8.0)
+    except (asyncio.TimeoutError, httpx.TimeoutException, Exception):
+        result = _deterministic_explain(payload)
     _AI_EXPLAIN_CACHE[cache_key] = dict(result)
     return result
 

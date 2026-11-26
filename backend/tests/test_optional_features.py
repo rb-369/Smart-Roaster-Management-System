@@ -474,16 +474,16 @@ def test_explain_conflict_ai_provider_timeout_and_cache(client: TestClient, monk
         def __init__(self, timeout=None):
             call_log.append(timeout)
 
-        def __enter__(self):
+        async def __aenter__(self):
             return self
 
-        def __exit__(self, *args):
+        async def __aexit__(self, *args):
             return False
 
-        def post(self, *args, **kwargs):
+        async def post(self, *args, **kwargs):
             return _FakeSuccessResp()
 
-    monkeypatch.setattr(rosters_router.httpx, "Client", _FakeClientSuccess)
+    monkeypatch.setattr(rosters_router.httpx, "AsyncClient", _FakeClientSuccess)
     payload_ok = {
         "date": "2026-12-03",
         "conflict_type": "UNCOVERED_BRAND_PROCESS",
@@ -511,16 +511,16 @@ def test_explain_conflict_ai_provider_timeout_and_cache(client: TestClient, monk
         def __init__(self, timeout=None):
             call_log.append(timeout)
 
-        def __enter__(self):
+        async def __aenter__(self):
             return self
 
-        def __exit__(self, *args):
+        async def __aexit__(self, *args):
             return False
 
-        def post(self, *args, **kwargs):
-            raise httpx.ReadTimeout("timed out")
+        async def post(self, *args, **kwargs):
+            raise httpx.TimeoutException("timed out")
 
-    monkeypatch.setattr(rosters_router.httpx, "Client", _FakeClientTimeout)
+    monkeypatch.setattr(rosters_router.httpx, "AsyncClient", _FakeClientTimeout)
     payload_timeout = dict(payload_ok, date="2026-12-04", message="Timeout gap")
     res_timeout = client.post("/api/rosters/2026-12/explain-conflict", json=payload_timeout)
     assert res_timeout.status_code == 200

@@ -80,7 +80,7 @@ export default function KpiBar({
       <button
         type="button"
         onClick={() => onOpenConflicts("HARD")}
-        className={`group text-left border rounded-2xl p-4 transition-all ${
+        className={`cursor-pointer group text-left border rounded-2xl p-4 transition-all ${
           hardCount > 0
             ? "border-red-200 bg-red-50/40 hover:border-red-300 hover:bg-red-50/70"
             : "border-neutral-200 bg-white hover:border-neutral-300"
@@ -115,7 +115,7 @@ export default function KpiBar({
       <button
         type="button"
         onClick={() => onOpenConflicts("SOFT")}
-        className="group text-left bg-white border border-neutral-200 rounded-2xl p-4 transition-colors hover:border-amber-300"
+        className="cursor-pointer group text-left bg-white border border-neutral-200 rounded-2xl p-4 transition-colors hover:border-amber-300"
       >
         <div className="flex items-center justify-between text-neutral-500 mb-2">
           <span className="text-[11px] font-semibold uppercase tracking-wider">Soft Warnings</span>

@@ -230,10 +230,11 @@ export default function HomePage() {
     }
   };
 
-  const openConflictsDrawer = (severity: "ALL" | "HARD" | "SOFT" = "ALL") => {
+  const openConflictsDrawer = useCallback((severity: "ALL" | "HARD" | "SOFT" = "ALL") => {
+    setNotifOpen(false);
     setDrawerSeverity(severity);
     setDrawerOpen(true);
-  };
+  }, []);
 
   const handleApprovePod = async () => {
     try {
@@ -412,7 +413,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => openConflictsDrawer("ALL")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold border transition-colors ${
+              className={`cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold border transition-colors ${
                 hardConflictsCount > 0
                   ? "bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
                   : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-100"

@@ -544,6 +544,28 @@ export async function markNotificationsRead(): Promise<{ status?: string }> {
   return request("/api/notifications/mark-read", { method: "POST" });
 }
 
+function buildClientDeterministicFallback(conflict: Conflict): ExplainConflictResponse {
+  const brandLabel = conflict.brand_name || conflict.brand_id || "the affected brand";
+  const procLabel = conflict.process_name || conflict.process_id || "operations";
+  const top = conflict.suggested_resolutions?.[0];
+  const steps: string[] = [];
+  if (top) {
+    steps.push(`Assign top-ranked backup ${top.name} (score ${top.score}: ${top.reason}) for ${conflict.date}.`);
+  } else {
+    steps.push(`Review pod capacity for ${brandLabel} on ${conflict.date} and reassign an available floater or Pod Lead.`);
+  }
+  if ((conflict.suggested_resolutions?.length || 0) > 1) {
+    const alt = conflict.suggested_resolutions[1];
+    steps.push(`Keep ${alt.name} on standby as secondary coverage.`);
+  }
+  steps.push(`Verify ${brandLabel} (${procLabel}) coverage status updates to COVERED/BACKUP_COVERED.`);
+  return {
+    explanation: `On ${conflict.date}, ${brandLabel} (${procLabel}) has a ${conflict.severity.toLowerCase()} conflict. ${conflict.message}`,
+    action_steps: steps.slice(0, 3),
+    provider: "Deterministic Fallback",
+  };
+}
+
 export async function explainConflict(
   month: string,
   conflict: Conflict
@@ -567,10 +589,23 @@ export async function explainConflict(
       reason: r.reason,
     })),
   };
-  return request(`/api/rosters/${encodeURIComponent(month)}/explain-conflict`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 9000);
+  try {
+    return await request(`/api/rosters/${encodeURIComponent(month)}/explain-conflict`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (err: unknown) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return buildClientDeterministicFallback(conflict);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function autoResolveGaps(
