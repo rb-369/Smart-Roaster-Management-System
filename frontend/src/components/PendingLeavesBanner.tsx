@@ -226,16 +226,21 @@ export default function PendingLeavesBanner({
                         onClick={() => handleApprove(leave)}
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 text-white text-xs font-semibold transition-colors"
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {isBusy ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        )}
                         {isBusy ? "Checking Impact..." : `Approve ${leave.id} & Check Impact`}
                       </button>
                       <button
                         type="button"
                         disabled={isBusy}
                         onClick={() => handleReject(leave)}
-                        className="px-3.5 py-2 rounded-full bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs font-medium transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-neutral-100 disabled:opacity-50 border border-neutral-200 text-neutral-700 text-xs font-medium transition-colors"
                       >
-                        Reject
+                        {isBusy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        {isBusy ? "Rejecting..." : "Reject"}
                       </button>
                     </div>
                   </div>

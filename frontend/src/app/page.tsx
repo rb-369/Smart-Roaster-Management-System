@@ -383,7 +383,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs font-medium transition-colors disabled:opacity-50"
             >
               <RotateCcw className={`w-3.5 h-3.5 ${resetting ? "animate-spin" : ""}`} />
-              Reset Demo
+              {resetting ? "Resetting..." : "Reset Demo"}
             </button>
 
             {/* Export CSV */}
@@ -591,7 +591,7 @@ export default function HomePage() {
                 ) : (
                   <UserCheck className="w-3.5 h-3.5" />
                 )}
-                Approve as Pod Lead
+                {approvingPod ? "Approving..." : "Approve as Pod Lead"}
               </button>
             )}
 
@@ -611,7 +611,7 @@ export default function HomePage() {
                 ) : (
                   <Send className="w-3.5 h-3.5" />
                 )}
-                Publish Roster
+                {publishing ? "Publishing..." : "Publish Roster"}
               </button>
             ) : (
               <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">

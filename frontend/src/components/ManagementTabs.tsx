@@ -87,6 +87,7 @@ export default function ManagementTabs({
 }: ManagementTabsProps) {
   const [subTab, setSubTab] = useState<ManagementSubTab>(initialSubTab);
   const [busy, setBusy] = useState(false);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
@@ -175,9 +176,10 @@ export default function ManagementTabs({
     is_national: true,
   });
 
-  const runAction = async (fn: () => Promise<unknown>, successText: string) => {
+  const runAction = async (fn: () => Promise<unknown>, successText: string, actionKey?: string) => {
     try {
       setBusy(true);
+      if (actionKey) setBusyAction(actionKey);
       setErrorMsg(null);
       setStatusMsg(null);
       await fn();
@@ -187,6 +189,7 @@ export default function ManagementTabs({
       setErrorMsg(err instanceof Error ? err.message : "Operation failed");
     } finally {
       setBusy(false);
+      setBusyAction(null);
     }
   };
 
@@ -298,11 +301,17 @@ export default function ManagementTabs({
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => runAction(() => deletePod(pod.id), `Deleted pod ${pod.id}`)}
-                      className="p-1 text-slate-400 hover:text-rose-600"
+                      onClick={() =>
+                        runAction(() => deletePod(pod.id), `Deleted pod ${pod.id}`, `del-pod-${pod.id}`)
+                      }
+                      className="p-1 text-slate-400 hover:text-rose-600 disabled:opacity-50"
                       title="Delete Pod"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      {busyAction === `del-pod-${pod.id}` ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -410,12 +419,20 @@ export default function ManagementTabs({
                             type="button"
                             disabled={busy}
                             onClick={() =>
-                              runAction(() => deleteEmployee(emp.id), `Deleted employee ${emp.id}`)
+                              runAction(
+                                () => deleteEmployee(emp.id),
+                                `Deleted employee ${emp.id}`,
+                                `del-emp-${emp.id}`
+                              )
                             }
-                            className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600"
+                            className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 disabled:opacity-50"
                             title="Delete Employee"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            {busyAction === `del-emp-${emp.id}` ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -496,11 +513,16 @@ export default function ManagementTabs({
                           type="button"
                           disabled={busy}
                           onClick={() =>
-                            runAction(() => deleteBrand(b.id), `Deleted brand ${b.id}`)
+                            runAction(() => deleteBrand(b.id), `Deleted brand ${b.id}`, `del-brand-${b.id}`)
                           }
-                          className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600"
+                          className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 disabled:opacity-50"
+                          title="Delete Brand"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          {busyAction === `del-brand-${b.id}` ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -589,10 +611,17 @@ export default function ManagementTabs({
                         <button
                           type="button"
                           disabled={busy}
-                          onClick={() => runAction(() => deleteRule(r.id), `Deleted rule ${r.id}`)}
-                          className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600"
+                          onClick={() =>
+                            runAction(() => deleteRule(r.id), `Deleted rule ${r.id}`, `del-rule-${r.id}`)
+                          }
+                          className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 disabled:opacity-50"
+                          title="Delete Rule"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          {busyAction === `del-rule-${r.id}` ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -614,7 +643,8 @@ export default function ManagementTabs({
               const id = newAlloc.id.trim() || `ALLOC-${Date.now()}`;
               runAction(
                 () => createAllocation({ ...newAlloc, id }),
-                `Created allocation ${id}`
+                `Created allocation ${id}`,
+                "add-allocation"
               );
             }}
             className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
@@ -675,10 +705,14 @@ export default function ManagementTabs({
             <button
               type="submit"
               disabled={busy}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold transition-all min-w-[130px]"
             >
-              <Plus className="w-3.5 h-3.5" />
-              Add Allocation
+              {busyAction === "add-allocation" ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Plus className="w-3.5 h-3.5" />
+              )}
+              {busyAction === "add-allocation" ? "Adding..." : "Add Allocation"}
             </button>
           </form>
 
@@ -723,11 +757,20 @@ export default function ManagementTabs({
                           type="button"
                           disabled={busy}
                           onClick={() =>
-                            runAction(() => deleteAllocation(a.id), `Deleted allocation ${a.id}`)
+                            runAction(
+                              () => deleteAllocation(a.id),
+                              `Deleted allocation ${a.id}`,
+                              `del-alloc-${a.id}`
+                            )
                           }
-                          className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600"
+                          className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 disabled:opacity-50"
+                          title="Delete Allocation"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          {busyAction === `del-alloc-${a.id}` ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -756,7 +799,8 @@ export default function ManagementTabs({
                         id,
                         employee_id: effectiveLeaveEmployeeId,
                       }),
-                    `Added leave ${id}`
+                    `Added leave ${id}`,
+                    "add-leave"
                   ).then(() => {
                     setLeavePreview(null);
                     setLeavePreviewError(null);
@@ -840,10 +884,14 @@ export default function ManagementTabs({
                   <button
                     type="submit"
                     disabled={busy}
-                    className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 text-white text-xs font-semibold"
+                    className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold min-w-[70px] transition-all"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    Add
+                    {busyAction === "add-leave" ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Plus className="w-3.5 h-3.5" />
+                    )}
+                    {busyAction === "add-leave" ? "Adding..." : "Add"}
                   </button>
                 </div>
               </form>
@@ -1033,30 +1081,46 @@ export default function ManagementTabs({
                                   type="button"
                                   disabled={busy}
                                   onClick={() =>
-                                    runAction(async () => {
-                                      const res = await approveLeave(lv.id, month);
-                                      if (res.roster) {
-                                        onRosterUpdated(res.roster);
-                                      } else {
-                                        onRosterUpdated(await fetchMonthlyRoster(month));
-                                      }
-                                    }, `Approved ${lv.id} and re-validated roster`)
+                                    runAction(
+                                      async () => {
+                                        const res = await approveLeave(lv.id, month);
+                                        if (res.roster) {
+                                          onRosterUpdated(res.roster);
+                                        } else {
+                                          onRosterUpdated(await fetchMonthlyRoster(month));
+                                        }
+                                      },
+                                      `Approved ${lv.id} and re-validated roster`,
+                                      `approve-leave-${lv.id}`
+                                    )
                                   }
-                                  className="p-1.5 rounded hover:bg-emerald-50 text-emerald-600"
+                                  className="p-1.5 rounded hover:bg-emerald-50 text-emerald-600 disabled:opacity-50"
                                   title="Approve & Re-validate"
                                 >
-                                  <CheckCircle2 className="w-4 h-4" />
+                                  {busyAction === `approve-leave-${lv.id}` ? (
+                                    <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                                  ) : (
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  )}
                                 </button>
                                 <button
                                   type="button"
                                   disabled={busy}
                                   onClick={() =>
-                                    runAction(() => rejectLeave(lv.id), `Rejected ${lv.id}`)
+                                    runAction(
+                                      () => rejectLeave(lv.id),
+                                      `Rejected ${lv.id}`,
+                                      `reject-leave-${lv.id}`
+                                    )
                                   }
-                                  className="p-1.5 rounded hover:bg-slate-100 text-slate-500"
+                                  className="p-1.5 rounded hover:bg-slate-100 text-slate-500 disabled:opacity-50"
                                   title="Reject"
                                 >
-                                  <XCircle className="w-4 h-4" />
+                                  {busyAction === `reject-leave-${lv.id}` ? (
+                                    <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                                  ) : (
+                                    <XCircle className="w-4 h-4" />
+                                  )}
                                 </button>
                               </>
                             )}
@@ -1064,12 +1128,20 @@ export default function ManagementTabs({
                               type="button"
                               disabled={busy}
                               onClick={() =>
-                                runAction(() => deleteLeave(lv.id), `Deleted ${lv.id}`)
+                                runAction(
+                                  () => deleteLeave(lv.id),
+                                  `Deleted ${lv.id}`,
+                                  `del-leave-${lv.id}`
+                                )
                               }
-                              className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600"
+                              className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 disabled:opacity-50"
                               title="Delete"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              {busyAction === `del-leave-${lv.id}` ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
                             </button>
                           </div>
                         </td>
@@ -1089,7 +1161,8 @@ export default function ManagementTabs({
                 const id = newHoliday.id.trim() || `PH-${Date.now()}`;
                 runAction(
                   () => createHoliday({ ...newHoliday, id }),
-                  `Added holiday ${newHoliday.name}`
+                  `Added holiday ${newHoliday.name}`,
+                  "add-holiday"
                 );
               }}
               className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm space-y-2.5"
@@ -1115,10 +1188,14 @@ export default function ManagementTabs({
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold transition-all"
               >
-                <Plus className="w-3.5 h-3.5" />
-                Add Holiday
+                {busyAction === "add-holiday" ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Plus className="w-3.5 h-3.5" />
+                )}
+                {busyAction === "add-holiday" ? "Adding Holiday..." : "Add Holiday"}
               </button>
             </form>
 
@@ -1139,11 +1216,20 @@ export default function ManagementTabs({
                       type="button"
                       disabled={busy}
                       onClick={() =>
-                        runAction(() => deleteHoliday(h.id), `Deleted holiday ${h.name}`)
+                        runAction(
+                          () => deleteHoliday(h.id),
+                          `Deleted holiday ${h.name}`,
+                          `del-holiday-${h.id}`
+                        )
                       }
-                      className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600"
+                      className="p-1.5 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 disabled:opacity-50"
+                      title="Delete Holiday"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      {busyAction === `del-holiday-${h.id}` ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   </div>
                 ))}
@@ -1263,10 +1349,10 @@ export default function ManagementTabs({
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Save Pod
+                {busy ? (podModal.mode === "add" ? "Creating..." : "Saving...") : "Save Pod"}
               </button>
             </div>
           </form>
@@ -1458,10 +1544,10 @@ export default function ManagementTabs({
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Save Employee
+                {busy ? (empModal.mode === "add" ? "Creating..." : "Saving...") : "Save Employee"}
               </button>
             </div>
           </form>
@@ -1570,10 +1656,10 @@ export default function ManagementTabs({
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Save Brand
+                {busy ? (brandModal.mode === "add" ? "Creating..." : "Saving...") : "Save Brand"}
               </button>
             </div>
           </form>
@@ -1717,10 +1803,10 @@ export default function ManagementTabs({
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Save Rule
+                {busy ? (ruleModal.mode === "add" ? "Creating..." : "Saving...") : "Save Rule"}
               </button>
             </div>
           </form>
