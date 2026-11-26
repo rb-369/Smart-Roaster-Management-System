@@ -8,6 +8,25 @@ export interface Pod {
   id: string;
   name: string;
   lead_employee_id: string;
+  color?: string | null;
+}
+
+export const POD_COLOR_OPTIONS = [
+  { key: "rose", label: "Rose", swatch: "bg-rose-500", dot: "bg-rose-500", borderTop: "border-t-rose-500", borderLeft: "border-l-rose-500", headerBg: "bg-rose-50/60", badge: "bg-rose-50 text-rose-700 border-rose-200" },
+  { key: "sky", label: "Sky", swatch: "bg-sky-500", dot: "bg-sky-500", borderTop: "border-t-sky-500", borderLeft: "border-l-sky-500", headerBg: "bg-sky-50/60", badge: "bg-sky-50 text-sky-700 border-sky-200" },
+  { key: "emerald", label: "Emerald", swatch: "bg-emerald-500", dot: "bg-emerald-500", borderTop: "border-t-emerald-500", borderLeft: "border-l-emerald-500", headerBg: "bg-emerald-50/60", badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  { key: "amber", label: "Amber", swatch: "bg-amber-500", dot: "bg-amber-500", borderTop: "border-t-amber-500", borderLeft: "border-l-amber-500", headerBg: "bg-amber-50/60", badge: "bg-amber-50 text-amber-700 border-amber-200" },
+  { key: "violet", label: "Violet", swatch: "bg-violet-500", dot: "bg-violet-500", borderTop: "border-t-violet-500", borderLeft: "border-l-violet-500", headerBg: "bg-violet-50/60", badge: "bg-violet-50 text-violet-700 border-violet-200" },
+  { key: "teal", label: "Teal", swatch: "bg-teal-500", dot: "bg-teal-500", borderTop: "border-t-teal-500", borderLeft: "border-l-teal-500", headerBg: "bg-teal-50/60", badge: "bg-teal-50 text-teal-700 border-teal-200" },
+  { key: "blue", label: "Blue", swatch: "bg-blue-600", dot: "bg-blue-600", borderTop: "border-t-blue-600", borderLeft: "border-l-blue-600", headerBg: "bg-blue-50/60", badge: "bg-blue-50 text-blue-700 border-blue-200" },
+  { key: "orange", label: "Orange", swatch: "bg-orange-500", dot: "bg-orange-500", borderTop: "border-t-orange-500", borderLeft: "border-l-orange-500", headerBg: "bg-orange-50/60", badge: "bg-orange-50 text-orange-700 border-orange-200" },
+] as const;
+
+export function getPodColorTheme(color?: string | null, fallbackIdx: number = 0) {
+  return (
+    POD_COLOR_OPTIONS.find((c) => c.key === color) ||
+    POD_COLOR_OPTIONS[fallbackIdx % 4]
+  );
 }
 
 export interface Process {

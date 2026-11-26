@@ -25,6 +25,8 @@ import {
   Process,
   PublicHoliday,
   WEEKDAY_LABELS,
+  POD_COLOR_OPTIONS,
+  getPodColorTheme,
   approveLeave,
   createAllocation,
   createBrand,
@@ -216,6 +218,7 @@ export default function ManagementTabs({
                       id: `POD-${pods.length + 1}`,
                       name: "",
                       lead_employee_id: employees[0]?.id || "",
+                      color: POD_COLOR_OPTIONS[pods.length % 4].key,
                     },
                   })
                 }
@@ -227,17 +230,11 @@ export default function ManagementTabs({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4">
               {pods.map((pod, idx) => {
-                const podThemes = [
-                  { border: "border-t-rose-500", badge: "bg-rose-50 text-rose-700 border-rose-200" },
-                  { border: "border-t-sky-500", badge: "bg-sky-50 text-sky-700 border-sky-200" },
-                  { border: "border-t-emerald-500", badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-                  { border: "border-t-amber-500", badge: "bg-amber-50 text-amber-700 border-amber-200" },
-                ];
-                const theme = podThemes[idx % podThemes.length];
+                const theme = getPodColorTheme(pod.color, idx);
                 return (
                 <div
                   key={pod.id}
-                  className={`border border-neutral-200 border-t-2 ${theme.border} rounded-xl p-3.5 bg-white flex items-start justify-between gap-2`}
+                  className={`border border-neutral-200 border-t-2 ${theme.borderTop} rounded-xl p-3.5 bg-white flex items-start justify-between gap-2`}
                 >
                   <div>
                     <div className="text-sm font-bold text-neutral-950">{pod.name}</div>
@@ -251,7 +248,12 @@ export default function ManagementTabs({
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => setPodModal({ mode: "edit", data: { ...pod } })}
+                      onClick={() =>
+                        setPodModal({
+                          mode: "edit",
+                          data: { ...pod, color: pod.color || POD_COLOR_OPTIONS[idx % 4].key },
+                        })
+                      }
                       className="p-1 text-slate-500 hover:text-neutral-950"
                       title="Edit Pod"
                     >
@@ -1010,6 +1012,33 @@ export default function ManagementTabs({
                     </option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1.5">Pod Color</label>
+                <div className="flex flex-wrap items-center gap-2">
+                  {POD_COLOR_OPTIONS.map((c) => {
+                    const selected = (podModal.data.color || "") === c.key;
+                    return (
+                      <button
+                        key={c.key}
+                        type="button"
+                        title={c.label}
+                        onClick={() =>
+                          setPodModal({
+                            ...podModal,
+                            data: { ...podModal.data, color: c.key },
+                          })
+                        }
+                        className={`w-6 h-6 rounded-full ${c.swatch} transition-transform ${
+                          selected
+                            ? "ring-2 ring-offset-2 ring-neutral-900 scale-110"
+                            : "opacity-80 hover:opacity-100"
+                        }`}
+                        aria-label={`Select ${c.label} color`}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2">

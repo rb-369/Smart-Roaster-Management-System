@@ -8,6 +8,7 @@ class Pod(SQLModel, table=True):
     id: str = Field(primary_key=True)
     name: str
     lead_employee_id: str
+    color: Optional[str] = None
 
 
 class Process(SQLModel, table=True):

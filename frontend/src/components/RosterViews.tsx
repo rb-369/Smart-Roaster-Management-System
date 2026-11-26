@@ -27,6 +27,7 @@ import {
   RosterEntry,
   RosterViewType,
   WEEKDAY_LABELS,
+  getPodColorTheme,
   patchRosterEntry,
 } from "@/lib/api";
 
@@ -331,13 +332,7 @@ export default function RosterViews({
 
             <tbody className="divide-y divide-neutral-200">
               {groups.map((grp, gIdx) => {
-                const podThemes = [
-                  { dot: "bg-rose-500", border: "border-l-rose-500", headerBg: "bg-rose-50/60" },
-                  { dot: "bg-sky-500", border: "border-l-sky-500", headerBg: "bg-sky-50/60" },
-                  { dot: "bg-emerald-500", border: "border-l-emerald-500", headerBg: "bg-emerald-50/60" },
-                  { dot: "bg-amber-500", border: "border-l-amber-500", headerBg: "bg-amber-50/60" },
-                ];
-                const theme = podThemes[gIdx % podThemes.length];
+                const theme = getPodColorTheme(grp.pod?.color, gIdx);
                 return (
                 <React.Fragment key={grp.pod?.id || `grp-${gIdx}`}>
                   {gIdx > 0 && grp.pod && (
@@ -349,7 +344,7 @@ export default function RosterViews({
                     <tr className={`${theme.headerBg} border-t-2 border-b border-neutral-300`}>
                       <td
                         colSpan={dates.length + 1}
-                        className={`px-3 py-2.5 text-[11px] font-bold text-neutral-900 uppercase tracking-wider border-l-4 ${theme.border}`}
+                        className={`px-3 py-2.5 text-[11px] font-bold text-neutral-900 uppercase tracking-wider border-l-4 ${theme.borderLeft}`}
                       >
                         <div className="sticky left-3 inline-flex items-center gap-2">
                           <span className={`w-2.5 h-2.5 rounded-full ${theme.dot}`} />
@@ -378,7 +373,7 @@ export default function RosterViews({
                         className={`sticky left-0 z-20 ${
                           emp.role === "POD_LEAD" ? "bg-blue-50/95" : "bg-white"
                         } border-r-2 border-neutral-300 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)] ${
-                          grp.pod ? `border-l-4 ${theme.border}` : ""
+                          grp.pod ? `border-l-4 ${theme.borderLeft}` : ""
                         } px-3 py-2`}
                       >
                         <div className="flex items-center justify-between gap-2">
