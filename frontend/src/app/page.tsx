@@ -835,7 +835,7 @@ export default function HomePage() {
         </div>
       )}
       {/* Read-Only Roster Copilot */}
-      <RosterCopilot month={month} />
+      <RosterCopilot month={month} employees={employees} brands={brands} />
     </div>
   );
 }

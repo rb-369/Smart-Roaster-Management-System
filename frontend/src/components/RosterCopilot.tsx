@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { Loader2, MessageSquare, Send, X } from "lucide-react";
-import { AssistantChatMessage, sendAssistantChat } from "@/lib/api";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Building2, Loader2, MessageSquare, Send, User, X } from "lucide-react";
+import { AssistantChatMessage, Brand, Employee, sendAssistantChat } from "@/lib/api";
 import SmartRosterLogo from "@/components/SmartRosterLogo";
 
 interface CopilotEntry extends AssistantChatMessage {
@@ -12,6 +12,16 @@ interface CopilotEntry extends AssistantChatMessage {
 
 interface RosterCopilotProps {
   month: string;
+  employees: Employee[];
+  brands: Brand[];
+}
+
+interface TagSuggestion {
+  id: string;
+  label: string;
+  sublabel: string;
+  insertText: string;
+  kind: "employee" | "brand";
 }
 
 const STARTER_PROMPTS = [
@@ -21,19 +31,132 @@ const STARTER_PROMPTS = [
   "Which employees have the fewest Sunday offs?",
 ];
 
-export default function RosterCopilot({ month }: RosterCopilotProps) {
+function renderInlineMarkdown(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+      return (
+        <strong key={idx} className="font-semibold text-neutral-950">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith("`") && part.endsWith("`") && part.length > 2) {
+      return (
+        <code
+          key={idx}
+          className="px-1 py-0.5 rounded bg-neutral-100 text-neutral-800 font-mono text-[11px]"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
+}
+
+function FormattedMessage({ content }: { content: string }) {
+  const lines = content.split("\n");
+  return (
+    <div className="space-y-1">
+      {lines.map((line, idx) => {
+        const trimmed = line.trimStart();
+        if (trimmed.startsWith("- ")) {
+          const indent = line.length - trimmed.length;
+          return (
+            <div
+              key={idx}
+              className={`flex items-start gap-1.5 ${indent >= 2 ? "pl-3" : ""}`}
+            >
+              <span className="text-neutral-400 select-none mt-[1px]">•</span>
+              <span className="flex-1">{renderInlineMarkdown(trimmed.slice(2))}</span>
+            </div>
+          );
+        }
+        return <div key={idx}>{renderInlineMarkdown(line)}</div>;
+      })}
+    </div>
+  );
+}
+
+export default function RosterCopilot({
+  month,
+  employees,
+  brands,
+}: RosterCopilotProps) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState<CopilotEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, sending, open]);
+
+  // Detect active @employee or /brand trigger at the end of the input (or before cursor)
+  const activeTrigger = useMemo(() => {
+    const match = input.match(/(?:^|\s)([@/])([^\s@/]*)$/);
+    if (!match) return null;
+    const triggerChar = match[1] as "@" | "/";
+    const query = match[2].toLowerCase();
+    const triggerStart = input.lastIndexOf(triggerChar);
+    return { triggerChar, query, triggerStart };
+  }, [input]);
+
+  const suggestions: TagSuggestion[] = useMemo(() => {
+    if (!activeTrigger) return [];
+    const { triggerChar, query } = activeTrigger;
+    if (triggerChar === "@") {
+      return employees
+        .filter(
+          (e) =>
+            !query ||
+            e.name.toLowerCase().includes(query) ||
+            e.id.toLowerCase().includes(query)
+        )
+        .slice(0, 7)
+        .map((e) => ({
+          id: e.id,
+          label: e.name,
+          sublabel: `${e.id} · ${e.pod_id}`,
+          insertText: `@${e.name} (${e.id}) `,
+          kind: "employee",
+        }));
+    }
+    return brands
+      .filter(
+        (b) =>
+          !query ||
+          b.name.toLowerCase().includes(query) ||
+          b.id.toLowerCase().includes(query)
+      )
+      .slice(0, 7)
+      .map((b) => ({
+        id: b.id,
+        label: b.name,
+        sublabel: `${b.id} · ${b.pod_id}`,
+        insertText: `/${b.name} (${b.id}) `,
+        kind: "brand",
+      }));
+  }, [activeTrigger, employees, brands]);
+
+  useEffect(() => {
+    setSelectedIdx(0);
+  }, [activeTrigger?.triggerChar, activeTrigger?.query]);
+
+  const applySuggestion = (s: TagSuggestion) => {
+    if (!activeTrigger) return;
+    const prefix = input.slice(0, activeTrigger.triggerStart);
+    setInput(`${prefix}${s.insertText}`);
+    setSelectedIdx(0);
+    inputRef.current?.focus();
+  };
 
   const handleSend = async (rawText?: string) => {
     const text = (rawText ?? input).trim();
@@ -76,7 +199,7 @@ export default function RosterCopilot({ month }: RosterCopilotProps) {
   return (
     <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end">
       {open && (
-        <div className="mb-3 w-[360px] sm:w-[410px] max-h-[540px] bg-white border border-neutral-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="mb-3 w-[360px] sm:w-[420px] max-h-[560px] bg-white border border-neutral-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
           {/* Header */}
           <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50/90 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -112,7 +235,11 @@ export default function RosterCopilot({ month }: RosterCopilotProps) {
               <div className="space-y-2.5">
                 <p className="text-xs text-neutral-600 leading-relaxed">
                   Ask anything about <span className="font-semibold text-neutral-900">{month}</span>{" "}
-                  coverage gaps, backup candidates, pod bottlenecks, or Sunday-off fairness:
+                  coverage gaps, backup candidates, pod bottlenecks, or use{" "}
+                  <code className="px-1 py-0.5 rounded bg-neutral-200/70 font-mono text-[11px]">@</code>{" "}
+                  for employees and{" "}
+                  <code className="px-1 py-0.5 rounded bg-neutral-200/70 font-mono text-[11px]">/</code>{" "}
+                  for brands:
                 </p>
                 <div className="flex flex-col gap-1.5">
                   {STARTER_PROMPTS.map((prompt) => (
@@ -138,13 +265,17 @@ export default function RosterCopilot({ month }: RosterCopilotProps) {
                 }`}
               >
                 <div
-                  className={`max-w-[90%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
+                  className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
                     m.role === "user"
-                      ? "bg-neutral-900 text-white rounded-br-sm"
+                      ? "bg-neutral-900 text-white rounded-br-sm whitespace-pre-wrap"
                       : "bg-white border border-neutral-200 text-neutral-800 rounded-bl-sm shadow-2xs"
                   }`}
                 >
-                  {m.content}
+                  {m.role === "assistant" ? (
+                    <FormattedMessage content={m.content} />
+                  ) : (
+                    m.content
+                  )}
                 </div>
                 {m.role === "assistant" && m.source && (
                   <span
@@ -174,19 +305,78 @@ export default function RosterCopilot({ month }: RosterCopilotProps) {
             )}
           </div>
 
+          {/* @Employee / /Brand Autocomplete Popover */}
+          {activeTrigger && suggestions.length > 0 && (
+            <div className="border-t border-neutral-200 bg-white max-h-44 overflow-y-auto px-2 py-1.5 space-y-0.5">
+              <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+                {activeTrigger.triggerChar === "@"
+                  ? "Tag Employee (@)"
+                  : "Tag Brand / Company (/)"}
+              </div>
+              {suggestions.map((s, idx) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    applySuggestion(s);
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition-colors ${
+                    idx === selectedIdx
+                      ? "bg-blue-50 text-blue-900"
+                      : "hover:bg-neutral-100 text-neutral-800"
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-2 font-medium truncate">
+                    {s.kind === "employee" ? (
+                      <User className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                    ) : (
+                      <Building2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    )}
+                    <span className="truncate">{s.label}</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-neutral-500 ml-2 flex-shrink-0">
+                    {s.sublabel}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Input */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              if (activeTrigger && suggestions.length > 0) {
+                applySuggestion(suggestions[selectedIdx] || suggestions[0]);
+                return;
+              }
               handleSend();
             }}
             className="p-2.5 border-t border-neutral-200 bg-white flex items-center gap-2"
           >
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={`Ask about ${month} gaps, backups, pods...`}
+              onKeyDown={(e) => {
+                if (!activeTrigger || suggestions.length === 0) return;
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setSelectedIdx((prev) => (prev + 1) % suggestions.length);
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setSelectedIdx((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+                } else if (e.key === "Tab") {
+                  e.preventDefault();
+                  applySuggestion(suggestions[selectedIdx] || suggestions[0]);
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  setInput((prev) => prev.slice(0, activeTrigger.triggerStart));
+                }
+              }}
+              placeholder="Ask about gaps, or type @employee /brand..."
               disabled={sending}
               className="flex-1 px-3 py-2 text-xs bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:border-blue-500"
             />

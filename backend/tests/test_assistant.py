@@ -95,6 +95,33 @@ def test_assistant_chat_deterministic_fallback_and_read_only(monkeypatch):
     assert "Sunday" in body_sun["reply"]
     assert "EMP-" in body_sun["reply"]
 
+    # 5. First-name employee holiday query (e.g. "when does Omkar have holiday?")
+    res_emp = client.post(
+        "/api/assistant/chat",
+        json={
+            "month": "2026-12",
+            "message": "when does Omkar have holiday?",
+            "history": [],
+        },
+    )
+    assert res_emp.status_code == 200
+    body_emp = res_emp.json()
+    assert body_emp["source"] == "deterministic_fallback"
+    assert "Omkar" in body_emp["reply"]
+    assert "Weekly Off Dates" in body_emp["reply"]
+
+    # 6. General overview should report real total_operating_slots (never /0 slots)
+    res_ov = client.post(
+        "/api/assistant/chat",
+        json={
+            "month": "2026-12",
+            "message": "Give me a coverage summary",
+            "history": [],
+        },
+    )
+    assert res_ov.status_code == 200
+    assert "/0 slots" not in res_ov.json()["reply"]
+
     # Strictly read-only: DB row counts must be unchanged
     counts_after = _snapshot_db_counts()
     assert counts_after == counts_before

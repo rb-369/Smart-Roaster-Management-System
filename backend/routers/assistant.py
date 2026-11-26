@@ -169,14 +169,18 @@ def _build_live_snapshot(session: Session, month: str) -> Dict[str, Any]:
     for item in grouped_hard.values():
         item["dates"] = sorted(set(d for d in item["dates"] if d))
 
-    # Employee fairness summary (Sunday offs + weekly off rule + status counts)
+    # Employee fairness summary (Sunday offs + weekly off rule + status counts + off dates)
     sunday_off_counts: Counter[str] = Counter()
     emp_status_counts: Dict[str, Counter[str]] = defaultdict(Counter)
+    emp_off_dates: Dict[str, Dict[str, List[str]]] = defaultdict(lambda: defaultdict(list))
     for entry in entries:
         e_id = entry["employee_id"]
         st = entry.get("status", "WORKING")
+        d_str = entry.get("date")
         emp_status_counts[e_id][st] += 1
-        if entry.get("date") in sunday_dates and st == "WEEKLY_OFF":
+        if d_str and st in ("WEEKLY_OFF", "PUBLIC_HOLIDAY", "PLANNED_LEAVE", "COMP_OFF"):
+            emp_off_dates[e_id][st].append(d_str)
+        if d_str in sunday_dates and st == "WEEKLY_OFF":
             sunday_off_counts[e_id] += 1
 
     active_emps = [e for e in employees if e.get("active", True)]
@@ -244,7 +248,7 @@ def _build_live_snapshot(session: Session, month: str) -> Dict[str, Any]:
             "active_headcount": len(active_emps),
             "coverage_percentage": kpis.get("coverage_percentage", 0.0),
             "covered_slots": kpis.get("covered_slots", 0),
-            "total_required_slots": kpis.get("total_required_slots", 0),
+            "total_operating_slots": kpis.get("total_operating_slots", 0),
             "hard_conflicts_count": len(hard_conflicts),
             "soft_warnings_count": len(soft_conflicts),
             "pending_leaves_count": len(pending_leaves),
@@ -273,6 +277,10 @@ def _build_live_snapshot(session: Session, month: str) -> Dict[str, Any]:
         "holiday_impacts": holiday_impacts,
         "emp_primary_brands": dict(emp_primary_brands),
         "emp_status_counts": {k: dict(v) for k, v in emp_status_counts.items()},
+        "emp_off_dates": {
+            k: {st: sorted(ds) for st, ds in v.items()}
+            for k, v in emp_off_dates.items()
+        },
         "bottlenecks": bottlenecks,
         "structural_summary": structural_summary,
     }
@@ -328,6 +336,32 @@ def _format_backups(backups: List[Dict[str, Any]], limit: int = 2) -> str:
     return "; ".join(parts)
 
 
+def _match_employee(q: str, employees: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Match employee by @id, id, full name, or unambiguous first/last name token."""
+    for e in employees:
+        if e["id"].lower() in q or e["name"].lower() in q:
+            return e
+    tokens = set(re.findall(r"[a-z0-9]+", q))
+    for e in employees:
+        parts = [p for p in re.findall(r"[a-z0-9]+", e["name"].lower()) if len(p) >= 3]
+        if any(p in tokens for p in parts):
+            return e
+    return None
+
+
+def _match_brand(q: str, brands: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Match brand by /id, id, full name, or unambiguous brand name token."""
+    for b in brands:
+        if b["id"].lower() in q or b["name"].lower() in q:
+            return b
+    tokens = set(re.findall(r"[a-z0-9]+", q))
+    for b in brands:
+        parts = [p for p in re.findall(r"[a-z0-9]+", b["name"].lower()) if len(p) >= 4]
+        if any(p in tokens for p in parts):
+            return b
+    return None
+
+
 def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
     """Answer common operational questions directly from the live grounded snapshot."""
     q = message.lower()
@@ -340,14 +374,8 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
     bottlenecks: Dict[str, Any] = snapshot["bottlenecks"]
 
     mentioned_dates = _extract_dates_from_query(message, ctx["month"])
-    matched_emp = next(
-        (e for e in employees if e["name"].lower() in q or e["id"].lower() in q),
-        None,
-    )
-    matched_brand = next(
-        (b for b in brands if b["name"].lower() in q or b["id"].lower() in q),
-        None,
-    )
+    matched_emp = _match_employee(q, employees)
+    matched_brand = _match_brand(q, brands)
     matched_pod = next(
         (
             p
@@ -392,6 +420,14 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
                 f"{st_counts.get('COMP_OFF', 0)} Comp-Off (`CO`), "
                 f"{st_counts.get('BACKUP_COVERAGE', 0)} Backup (`BK`)."
             )
+        off_dates_map = snapshot.get("emp_off_dates", {}).get(emp_id, {})
+        if off_dates_map.get("WEEKLY_OFF"):
+            lines.append(f"- **Weekly Off Dates (`WO`):** {', '.join(off_dates_map['WEEKLY_OFF'])}")
+        if off_dates_map.get("PUBLIC_HOLIDAY"):
+            lines.append(f"- **Public Holiday Dates (`PH`):** {', '.join(off_dates_map['PUBLIC_HOLIDAY'])}")
+        if off_dates_map.get("PLANNED_LEAVE") or off_dates_map.get("COMP_OFF"):
+            lv_dates = off_dates_map.get("PLANNED_LEAVE", []) + off_dates_map.get("COMP_OFF", [])
+            lines.append(f"- **Leave / Comp-Off Dates:** {', '.join(sorted(lv_dates))}")
         if emp_leaves:
             lv_str = ", ".join(
                 f"{l['id']} ({l['type']}, {l['start_date']} to {l['end_date']}, {l['status']})"
@@ -525,7 +561,7 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
     recs = bottlenecks.get("recommendations", [])
     lines = [
         f"**Live Roster Snapshot ({ctx['month']}):**",
-        f"- **Coverage:** {kpis['coverage_percentage']}% ({kpis['covered_slots']}/{kpis['total_required_slots']} slots) · Active headcount: {kpis['active_headcount']}",
+        f"- **Coverage:** {kpis['coverage_percentage']}% ({kpis['covered_slots']}/{kpis['total_operating_slots']} slots) · Active headcount: {kpis['active_headcount']}",
         f"- **Conflicts:** {kpis['hard_conflicts_count']} hard, {kpis['soft_warnings_count']} soft warnings · Pending leaves: {kpis['pending_leaves_count']}",
         f"- **Top Bottleneck Pod:** {top_pod_line}",
         f"- **Structural Summary:** {snapshot['structural_summary']}",
