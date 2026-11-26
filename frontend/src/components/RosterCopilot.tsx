@@ -35,9 +35,10 @@ function renderInlineMarkdown(text: string): React.ReactNode[] {
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
   return parts.map((part, idx) => {
     if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+      const inner = part.slice(2, -2).replace(/`([^`]+)`/g, "$1");
       return (
         <strong key={idx} className="font-semibold text-neutral-950">
-          {part.slice(2, -2)}
+          {inner}
         </strong>
       );
     }

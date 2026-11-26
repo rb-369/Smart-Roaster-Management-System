@@ -232,6 +232,44 @@ def _build_live_snapshot(session: Session, month: str) -> Dict[str, Any]:
             }
         )
 
+    # Allocations (PRIMARY + BACKUP) per employee and per brand, plus dynamic BACKUP_COVERAGE dates
+    emp_allocations: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    brand_allocations: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for alc in allocations:
+        e_id = alc["employee_id"]
+        b_id = alc["brand_id"]
+        p_id = alc["process_id"]
+        a_type = alc.get("allocation_type", "PRIMARY")
+        b_name = brand_map.get(b_id, {}).get("name", b_id)
+        p_code = proc_map.get(p_id, {}).get("code", p_id)
+        emp_name = emp_map.get(e_id, {}).get("name", e_id)
+        emp_allocations[e_id].append({
+            "brand_id": b_id,
+            "brand_name": b_name,
+            "process_id": p_id,
+            "process_code": p_code,
+            "allocation_type": a_type,
+        })
+        brand_allocations[b_id].append({
+            "employee_id": e_id,
+            "employee_name": emp_name,
+            "process_id": p_id,
+            "process_code": p_code,
+            "allocation_type": a_type,
+        })
+
+    emp_dynamic_backups: Dict[str, List[Dict[str, str]]] = defaultdict(list)
+    for entry in entries:
+        if entry.get("status") == "BACKUP_COVERAGE" and entry.get("assigned_brand_id"):
+            b_id = entry["assigned_brand_id"]
+            p_id = entry.get("assigned_process_id") or ""
+            emp_dynamic_backups[entry["employee_id"]].append({
+                "date": entry["date"],
+                "brand_id": b_id,
+                "brand_name": brand_map.get(b_id, {}).get("name", b_id),
+                "process_code": proc_map.get(p_id, {}).get("code", p_id),
+            })
+
     # Primary brand allocations per employee (for quick lookup)
     emp_primary_brands: Dict[str, List[str]] = defaultdict(list)
     for alc in allocations:
@@ -276,6 +314,9 @@ def _build_live_snapshot(session: Session, month: str) -> Dict[str, Any]:
         "month_leaves": month_leaves,
         "holiday_impacts": holiday_impacts,
         "emp_primary_brands": dict(emp_primary_brands),
+        "emp_allocations": dict(emp_allocations),
+        "brand_allocations": dict(brand_allocations),
+        "emp_dynamic_backups": dict(emp_dynamic_backups),
         "emp_status_counts": {k: dict(v) for k, v in emp_status_counts.items()},
         "emp_off_dates": {
             k: {st: sorted(ds) for st, ds in v.items()}
@@ -387,7 +428,7 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
         None,
     )
 
-    # 1. Employee query (with or without dates: coverage, leaves, holidays, offs)
+    # 1. Employee query (intent-aware: assignment vs holidays/offs vs coverage)
     if matched_emp:
         emp_id = matched_emp["id"]
         emp_name = matched_emp["name"]
@@ -397,37 +438,114 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
         }
         emp_leaves = [l for l in snapshot["month_leaves"] if l["employee_id"] == emp_id]
         st_counts = snapshot.get("emp_status_counts", {}).get(emp_id, {})
+        off_dates_map = snapshot.get("emp_off_dates", {}).get(emp_id, {})
+        all_alcs = snapshot.get("emp_allocations", {}).get(emp_id, [])
+        dyn_backups = snapshot.get("emp_dynamic_backups", {}).get(emp_id, [])
 
-        relevant_conflicts = [
-            c
-            for c in hard_conflicts
-            if (not mentioned_dates or c.get("date") in mentioned_dates)
-            and (c.get("employee_id") == emp_id or c.get("brand_id") in emp_brand_ids)
-        ]
+        is_assignment_q = any(
+            w in q
+            for w in (
+                "company", "companies", "brand", "brands", "assigned",
+                "assign", "allocation", "allocated", "client", "clients",
+            )
+        )
+        is_cover_q = bool(mentioned_dates) or any(
+            w in q for w in ("cover", "backup", "gap", "shortfall", "conflict")
+        )
+        is_holiday_q = any(
+            w in q
+            for w in (
+                "holiday", "holidays", "off", "offs", "leave", "leaves",
+                "comp-off", "comp off", "absent", "when", "how many", "schedule",
+            )
+        )
 
-        lines = [
-            f"**{emp_name} ({emp_id})** — Pod `{matched_emp.get('pod_id')}`, Primary brands: "
-            + (", ".join(primary_brands) if primary_brands else "Floater / No primary brand")
-            + "."
-        ]
+        role_tag = "Floater" if matched_emp.get("is_floater") else matched_emp.get("role", "ASSOCIATE")
+
+        # 1a. Specific: Which company/brand is employee assigned to?
+        if is_assignment_q and not is_cover_q and not is_holiday_q:
+            lines = [f"**{emp_name} ({emp_id})** — Pod `{matched_emp.get('pod_id')}` · Role: `{role_tag}`"]
+            prim_alcs = [a for a in all_alcs if a["allocation_type"] == "PRIMARY"]
+            bkp_alcs = [a for a in all_alcs if a["allocation_type"] == "BACKUP"]
+
+            if prim_alcs:
+                prim_grouped: Dict[str, List[str]] = defaultdict(list)
+                for a in prim_alcs:
+                    prim_grouped[f"{a['brand_name']} ({a['brand_id']})"].append(a["process_code"])
+                lines.append("- **Primary Assignments:**")
+                for b_lbl, procs in prim_grouped.items():
+                    lines.append(f"  - **{b_lbl}** (`{', '.join(procs)}`)")
+            else:
+                lines.append("- **Primary Assignments:** None (dedicated Pod Floater covering gaps across the pod)")
+
+            if bkp_alcs:
+                bkp_grouped: Dict[str, List[str]] = defaultdict(list)
+                for a in bkp_alcs:
+                    bkp_grouped[f"{a['brand_name']} ({a['brand_id']})"].append(a["process_code"])
+                lines.append("- **Configured Backup Assignments:**")
+                for b_lbl, procs in bkp_grouped.items():
+                    lines.append(f"  - **{b_lbl}** (`{', '.join(procs)}`)")
+
+            if dyn_backups:
+                by_brand: Dict[str, List[str]] = defaultdict(list)
+                for db in dyn_backups:
+                    by_brand[f"{db['brand_name']} ({db['brand_id']}) · {db['process_code']}"].append(db["date"])
+                lines.append(f"- **Scheduled Backup Coverage in {ctx['month']}:**")
+                for lbl, ds in by_brand.items():
+                    lines.append(f"  - **{lbl}**: {', '.join(sorted(ds))}")
+            return "\n".join(lines)
+
+        # 1b. Specific: Cover / backup / gaps on dates
+        if is_cover_q:
+            relevant_conflicts = [
+                c
+                for c in hard_conflicts
+                if (not mentioned_dates or c.get("date") in mentioned_dates)
+                and (c.get("employee_id") == emp_id or c.get("brand_id") in emp_brand_ids)
+            ]
+            lines = [
+                f"**{emp_name} ({emp_id})** — Pod `{matched_emp.get('pod_id')}`, Primary brands: "
+                + (", ".join(primary_brands) if primary_brands else "Floater / No primary brand")
+            ]
+            if emp_leaves:
+                lv_str = ", ".join(
+                    f"{l['id']} ({l['start_date']} to {l['end_date']}, {l['status']})"
+                    for l in emp_leaves
+                )
+                lines.append(f"- **Leaves/Comp-offs:** {lv_str}")
+            if relevant_conflicts:
+                lines.append(f"- **Hard coverage gaps ({len(relevant_conflicts)}):**")
+                seen_keys = set()
+                for c in relevant_conflicts[:8]:
+                    b_id = c.get("brand_id") or "MULTI"
+                    p_id = c.get("process_id") or c.get("conflict_type")
+                    d_str = c.get("date")
+                    key = (d_str, b_id, p_id)
+                    if key in seen_keys:
+                        continue
+                    seen_keys.add(key)
+                    b_label = f"{c.get('brand_name') or b_id} ({b_id})" if c.get("brand_id") else "Multi-brand"
+                    backups_str = _format_backups(c.get("suggested_resolutions", []), limit=2)
+                    lines.append(f"  - `{d_str}` — **{b_label}** / {c.get('process_name') or p_id}: Top backups → {backups_str}")
+            else:
+                date_note = f" on {', '.join(mentioned_dates)}" if mentioned_dates else ""
+                lines.append(f"- No unresolved hard coverage gaps found for {emp_name}{date_note}.")
+            return "\n".join(lines)
+
+        # 1c. Specific: Holidays / Weekly offs / Leaves / Schedule
+        lines = [f"**{emp_name} ({emp_id})** — {ctx['month']} Offs & Holidays:"]
         if st_counts:
             lines.append(
-                f"- **{ctx['month']} Schedule Breakdown:** "
-                f"{st_counts.get('WORKING', 0)} Working (`W`), "
-                f"{st_counts.get('WEEKLY_OFF', 0)} Weekly Off (`WO`), "
+                f"- **Counts:** {st_counts.get('WEEKLY_OFF', 0)} Weekly Off (`WO`), "
                 f"{st_counts.get('PUBLIC_HOLIDAY', 0)} Public Holiday (`PH`), "
                 f"{st_counts.get('PLANNED_LEAVE', 0)} Planned Leave (`LV`), "
-                f"{st_counts.get('COMP_OFF', 0)} Comp-Off (`CO`), "
-                f"{st_counts.get('BACKUP_COVERAGE', 0)} Backup (`BK`)."
+                f"{st_counts.get('COMP_OFF', 0)} Comp-Off (`CO`) "
+                f"({st_counts.get('WORKING', 0)} Working, {st_counts.get('BACKUP_COVERAGE', 0)} Backup)."
             )
-        off_dates_map = snapshot.get("emp_off_dates", {}).get(emp_id, {})
         if off_dates_map.get("WEEKLY_OFF"):
-            lines.append(f"- **Weekly Off Dates (`WO`):** {', '.join(off_dates_map['WEEKLY_OFF'])}")
+            lines.append(f"- **Weekly Off Dates:** {', '.join(off_dates_map['WEEKLY_OFF'])}")
         if off_dates_map.get("PUBLIC_HOLIDAY"):
-            lines.append(f"- **Public Holiday Dates (`PH`):** {', '.join(off_dates_map['PUBLIC_HOLIDAY'])}")
-        if off_dates_map.get("PLANNED_LEAVE") or off_dates_map.get("COMP_OFF"):
-            lv_dates = off_dates_map.get("PLANNED_LEAVE", []) + off_dates_map.get("COMP_OFF", [])
-            lines.append(f"- **Leave / Comp-Off Dates:** {', '.join(sorted(lv_dates))}")
+            lines.append(f"- **Public Holiday Dates:** {', '.join(off_dates_map['PUBLIC_HOLIDAY'])}")
         if emp_leaves:
             lv_str = ", ".join(
                 f"{l['id']} ({l['type']}, {l['start_date']} to {l['end_date']}, {l['status']})"
@@ -436,24 +554,6 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
             lines.append(f"- **Leaves/Comp-offs:** {lv_str}")
         else:
             lines.append(f"- **Leaves/Comp-offs:** None recorded in {ctx['month']}.")
-
-        if relevant_conflicts:
-            lines.append(f"- **Hard coverage gaps ({len(relevant_conflicts)}):**")
-            seen_keys = set()
-            for c in relevant_conflicts[:8]:
-                b_id = c.get("brand_id") or "MULTI"
-                p_id = c.get("process_id") or c.get("conflict_type")
-                d_str = c.get("date")
-                key = (d_str, b_id, p_id)
-                if key in seen_keys:
-                    continue
-                seen_keys.add(key)
-                b_label = f"{c.get('brand_name') or b_id} ({b_id})" if c.get("brand_id") else "Multi-brand"
-                backups_str = _format_backups(c.get("suggested_resolutions", []), limit=2)
-                lines.append(f"  - `{d_str}` — **{b_label}** / {c.get('process_name') or p_id}: Top backups → {backups_str}")
-        elif mentioned_dates or any(w in q for w in ("cover", "backup", "gap")):
-            date_note = f" on {', '.join(mentioned_dates)}" if mentioned_dates else ""
-            lines.append(f"- No unresolved hard coverage gaps found for {emp_name}{date_note}.")
         return "\n".join(lines)
 
     # 2. Christmas / Specific Date(s) query (e.g. "Which brands have gaps on Dec 25 (Christmas)?")
@@ -535,11 +635,20 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
                 lines.append(f"- **Recommendation:** {pod_recs[0]}")
             return "\n".join(lines)
 
-    # 5. Brand query
+    # 5. Brand query (assignment vs conflicts)
     if matched_brand:
         b_id = matched_brand["id"]
+        is_team_q = any(w in q for w in ("who", "employee", "employees", "assigned", "staff", "team", "owner", "backup"))
+        b_alcs = snapshot.get("brand_allocations", {}).get(b_id, [])
         b_groups = [g for g in ctx["grouped_hard_conflicts"] if g.get("brand_id") == b_id]
         lines = [f"**{matched_brand['name']} ({b_id})** (Pod `{matched_brand.get('pod_id')}`):"]
+        if is_team_q and b_alcs:
+            for a in b_alcs:
+                lines.append(
+                    f"- **{a['employee_name']} ({a['employee_id']})** · `{a['process_code']}` ({a['allocation_type']})"
+                )
+            if not any(w in q for w in ("gap", "conflict", "shortfall")):
+                return "\n".join(lines)
         if b_groups:
             for g in b_groups:
                 backups_str = _format_backups(g.get("top_backups", []), limit=2)

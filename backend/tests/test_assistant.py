@@ -110,6 +110,21 @@ def test_assistant_chat_deterministic_fallback_and_read_only(monkeypatch):
     assert "Omkar" in body_emp["reply"]
     assert "Weekly Off Dates" in body_emp["reply"]
 
+    # 5b. Specific assignment query should return assignments without dumping off dates
+    res_assign = client.post(
+        "/api/assistant/chat",
+        json={
+            "month": "2026-12",
+            "message": "Which company is @Omkar Bhosale (EMP-30) assigned to?",
+            "history": [],
+        },
+    )
+    assert res_assign.status_code == 200
+    body_assign = res_assign.json()
+    assert "EMP-30" in body_assign["reply"]
+    assert "Primary Assignments" in body_assign["reply"]
+    assert "Weekly Off Dates" not in body_assign["reply"]
+
     # 6. General overview should report real total_operating_slots (never /0 slots)
     res_ov = client.post(
         "/api/assistant/chat",
