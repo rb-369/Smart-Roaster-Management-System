@@ -738,7 +738,7 @@ export async function sendAssistantChat(
   history: AssistantChatMessage[] = []
 ): Promise<AssistantChatResponse> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10000);
+  const timer = setTimeout(() => controller.abort("timeout"), 20000);
   try {
     const res = await fetch(`${API_BASE_URL}/api/assistant/chat`, {
       method: "POST",
@@ -753,6 +753,15 @@ export async function sendAssistantChat(
       );
     }
     return (await res.json()) as AssistantChatResponse;
+  } catch (err: unknown) {
+    if (
+      err === "timeout" ||
+      (err instanceof DOMException && err.name === "AbortError") ||
+      (err instanceof Error && err.name === "AbortError")
+    ) {
+      throw new Error("Copilot timed out waiting for the server. Please try again.");
+    }
+    throw err;
   } finally {
     clearTimeout(timer);
   }

@@ -3,6 +3,7 @@ Read-only Roster Copilot Chat Assistant Router.
 Builds a live grounded snapshot from DB + pure engine functions and answers
 using OpenRouter (8s timeout) with a deterministic Python fallback.
 """
+import asyncio
 import json
 import os
 import re
@@ -168,11 +169,15 @@ def _build_live_snapshot(session: Session, month: str) -> Dict[str, Any]:
     for item in grouped_hard.values():
         item["dates"] = sorted(set(d for d in item["dates"] if d))
 
-    # Employee fairness summary (Sunday offs + weekly off rule)
+    # Employee fairness summary (Sunday offs + weekly off rule + status counts)
     sunday_off_counts: Counter[str] = Counter()
+    emp_status_counts: Dict[str, Counter[str]] = defaultdict(Counter)
     for entry in entries:
-        if entry.get("date") in sunday_dates and entry.get("status") == "WEEKLY_OFF":
-            sunday_off_counts[entry["employee_id"]] += 1
+        e_id = entry["employee_id"]
+        st = entry.get("status", "WORKING")
+        emp_status_counts[e_id][st] += 1
+        if entry.get("date") in sunday_dates and st == "WEEKLY_OFF":
+            sunday_off_counts[e_id] += 1
 
     active_emps = [e for e in employees if e.get("active", True)]
     fairness_summary = sorted(
@@ -267,6 +272,7 @@ def _build_live_snapshot(session: Session, month: str) -> Dict[str, Any]:
         "month_leaves": month_leaves,
         "holiday_impacts": holiday_impacts,
         "emp_primary_brands": dict(emp_primary_brands),
+        "emp_status_counts": {k: dict(v) for k, v in emp_status_counts.items()},
         "bottlenecks": bottlenecks,
         "structural_summary": structural_summary,
     }
@@ -353,8 +359,8 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
         None,
     )
 
-    # 1. Employee + Date(s) or Employee coverage query (e.g. "Who can cover for Kabir Verma on Dec 10-11?")
-    if matched_emp and (mentioned_dates or any(w in q for w in ("cover", "backup", "leave", "absent", "gap"))):
+    # 1. Employee query (with or without dates: coverage, leaves, holidays, offs)
+    if matched_emp:
         emp_id = matched_emp["id"]
         emp_name = matched_emp["name"]
         primary_brands = snapshot["emp_primary_brands"].get(emp_id, [])
@@ -362,6 +368,7 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
             b_lbl.split("(")[-1].rstrip(")") for b_lbl in primary_brands
         }
         emp_leaves = [l for l in snapshot["month_leaves"] if l["employee_id"] == emp_id]
+        st_counts = snapshot.get("emp_status_counts", {}).get(emp_id, {})
 
         relevant_conflicts = [
             c
@@ -375,12 +382,24 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
             + (", ".join(primary_brands) if primary_brands else "Floater / No primary brand")
             + "."
         ]
+        if st_counts:
+            lines.append(
+                f"- **{ctx['month']} Schedule Breakdown:** "
+                f"{st_counts.get('WORKING', 0)} Working (`W`), "
+                f"{st_counts.get('WEEKLY_OFF', 0)} Weekly Off (`WO`), "
+                f"{st_counts.get('PUBLIC_HOLIDAY', 0)} Public Holiday (`PH`), "
+                f"{st_counts.get('PLANNED_LEAVE', 0)} Planned Leave (`LV`), "
+                f"{st_counts.get('COMP_OFF', 0)} Comp-Off (`CO`), "
+                f"{st_counts.get('BACKUP_COVERAGE', 0)} Backup (`BK`)."
+            )
         if emp_leaves:
             lv_str = ", ".join(
-                f"{l['id']} ({l['start_date']} to {l['end_date']}, {l['status']})"
+                f"{l['id']} ({l['type']}, {l['start_date']} to {l['end_date']}, {l['status']})"
                 for l in emp_leaves
             )
             lines.append(f"- **Leaves/Comp-offs:** {lv_str}")
+        else:
+            lines.append(f"- **Leaves/Comp-offs:** None recorded in {ctx['month']}.")
 
         if relevant_conflicts:
             lines.append(f"- **Hard coverage gaps ({len(relevant_conflicts)}):**")
@@ -396,7 +415,7 @@ def _deterministic_reply(message: str, snapshot: Dict[str, Any]) -> str:
                 b_label = f"{c.get('brand_name') or b_id} ({b_id})" if c.get("brand_id") else "Multi-brand"
                 backups_str = _format_backups(c.get("suggested_resolutions", []), limit=2)
                 lines.append(f"  - `{d_str}` — **{b_label}** / {c.get('process_name') or p_id}: Top backups → {backups_str}")
-        else:
+        elif mentioned_dates or any(w in q for w in ("cover", "backup", "gap")):
             date_note = f" on {', '.join(mentioned_dates)}" if mentioned_dates else ""
             lines.append(f"- No unresolved hard coverage gaps found for {emp_name}{date_note}.")
         return "\n".join(lines)
@@ -582,12 +601,18 @@ async def assistant_chat(
     """
     snapshot = _build_live_snapshot(session, payload.month)
 
-    ai_result = await _call_openrouter(
-        month=payload.month,
-        message=payload.message,
-        history=payload.history,
-        compact_context=snapshot["compact_context"],
-    )
+    try:
+        ai_result = await asyncio.wait_for(
+            _call_openrouter(
+                month=payload.month,
+                message=payload.message,
+                history=payload.history,
+                compact_context=snapshot["compact_context"],
+            ),
+            timeout=8.0,
+        )
+    except (asyncio.TimeoutError, Exception):
+        ai_result = None
 
     if ai_result is not None:
         reply_text, provider_name = ai_result

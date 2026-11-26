@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Loader2, MessageSquare, Send, Sparkles, X } from "lucide-react";
+import { Loader2, MessageSquare, Send, X } from "lucide-react";
 import { AssistantChatMessage, sendAssistantChat } from "@/lib/api";
+import SmartRosterLogo from "@/components/SmartRosterLogo";
 
 interface CopilotEntry extends AssistantChatMessage {
   id: string;
@@ -78,10 +79,8 @@ export default function RosterCopilot({ month }: RosterCopilotProps) {
         <div className="mb-3 w-[360px] sm:w-[410px] max-h-[540px] bg-white border border-neutral-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
           {/* Header */}
           <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50/90 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-blue-600 text-white shadow-xs">
-                <Sparkles className="w-3.5 h-3.5" />
-              </span>
+            <div className="flex items-center gap-2.5">
+              <SmartRosterLogo size={30} className="rounded-xl shadow-xs" />
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="text-xs font-bold text-neutral-900">Roster Copilot</h3>
@@ -219,7 +218,6 @@ export default function RosterCopilot({ month }: RosterCopilotProps) {
           <MessageSquare className="w-4 h-4 text-blue-400" />
         )}
         <span>Roster Copilot</span>
-        {!open && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
       </button>
     </div>
   );
