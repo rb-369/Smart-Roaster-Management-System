@@ -738,7 +738,7 @@ export async function sendAssistantChat(
   history: AssistantChatMessage[] = []
 ): Promise<AssistantChatResponse> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort("timeout"), 20000);
+  const timer = setTimeout(() => controller.abort("timeout"), 25000);
   try {
     const res = await fetch(`${API_BASE_URL}/api/assistant/chat`, {
       method: "POST",

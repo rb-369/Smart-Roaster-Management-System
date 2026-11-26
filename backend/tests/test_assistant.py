@@ -26,6 +26,7 @@ def _snapshot_db_counts() -> dict:
 
 def test_assistant_chat_deterministic_fallback_and_read_only(monkeypatch):
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     seed_database()
 
     # Ensure 2026-12 roster exists cleanly
@@ -95,7 +96,7 @@ def test_assistant_chat_deterministic_fallback_and_read_only(monkeypatch):
     assert "Sunday" in body_sun["reply"]
     assert "EMP-" in body_sun["reply"]
 
-    # 5. First-name employee holiday query (e.g. "when does Omkar have holiday?")
+    # 5. First-name employee holiday query
     res_emp = client.post(
         "/api/assistant/chat",
         json={
@@ -110,7 +111,7 @@ def test_assistant_chat_deterministic_fallback_and_read_only(monkeypatch):
     assert "Omkar" in body_emp["reply"]
     assert "Weekly Off Dates" in body_emp["reply"]
 
-    # 5b. Specific assignment query should return assignments without dumping off dates
+    # 5b. Specific assignment query
     res_assign = client.post(
         "/api/assistant/chat",
         json={
@@ -125,7 +126,21 @@ def test_assistant_chat_deterministic_fallback_and_read_only(monkeypatch):
     assert "Primary Assignments" in body_assign["reply"]
     assert "Weekly Off Dates" not in body_assign["reply"]
 
-    # 6. General overview should report real total_operating_slots (never /0 slots)
+    # 5c. Ordinal date assignment query ("on 17th December")
+    res_where = client.post(
+        "/api/assistant/chat",
+        json={
+            "month": "2026-12",
+            "message": "Where can I assign @Omkar Bhosale (EMP-30) on 17th December?",
+            "history": [],
+        },
+    )
+    assert res_where.status_code == 200
+    body_where = res_where.json()
+    assert "2026-12-17" in body_where["reply"]
+    assert "WEEKLY_OFF" in body_where["reply"]
+
+    # 6. General overview reports real total_operating_slots
     res_ov = client.post(
         "/api/assistant/chat",
         json={
@@ -142,8 +157,71 @@ def test_assistant_chat_deterministic_fallback_and_read_only(monkeypatch):
     assert counts_after == counts_before
 
 
-def test_assistant_chat_falls_back_on_openrouter_timeout(monkeypatch):
+def test_assistant_chat_ai_tool_calling_loop(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+
+    call_count = {"n": 0}
+
+    class FakeResp:
+        def __init__(self, payload):
+            self.status_code = 200
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    async def fake_post(self, url, **kwargs):
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            return FakeResp({
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{
+                            "functionCall": {
+                                "name": "get_employee_details",
+                                "args": {"employee_query": "EMP-30", "date": "2026-12-17"},
+                            }
+                        }],
+                    }
+                }]
+            })
+        # Verify tool response was fed back to the model
+        contents = kwargs["json"]["contents"]
+        tool_resp = contents[-1]["parts"][0]["functionResponse"]["response"]["result"]
+        assert tool_resp["employee"]["id"] == "EMP-30"
+        assert tool_resp["date_check"]["date"] == "2026-12-17"
+        return FakeResp({
+            "candidates": [{
+                "content": {
+                    "role": "model",
+                    "parts": [{"text": "Omkar Bhosale (EMP-30) is on WEEKLY_OFF on 2026-12-17; swap his off to cover open POD-4 gaps."}],
+                }
+            }]
+        })
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+
+    res = client.post(
+        "/api/assistant/chat",
+        json={
+            "month": "2026-12",
+            "message": "Where can I assign @Omkar Bhosale (EMP-30) on 17th December?",
+            "history": [],
+        },
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["source"] == "ai"
+    assert "Gemini" in (data.get("provider") or "")
+    assert "EMP-30" in data["reply"]
+    assert call_count["n"] == 2
+
+
+def test_assistant_chat_falls_back_on_provider_timeout(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
     async def fake_post(*args, **kwargs):
         raise httpx.TimeoutException("Simulated timeout")

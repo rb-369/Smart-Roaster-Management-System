@@ -1,5 +1,6 @@
 import os
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
@@ -7,6 +8,9 @@ from database import init_db, engine
 from models import Employee
 from seed import seed_database
 from routers import assistant, entities, leaves, rosters
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"), override=False)
+load_dotenv(override=False)
 
 
 @asynccontextmanager
