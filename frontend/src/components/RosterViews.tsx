@@ -440,6 +440,25 @@ export default function RosterViews({
                 <span>{STATUS_META[st].label}</span>
               </span>
             ))}
+            <span className="h-3.5 w-px bg-neutral-300" aria-hidden="true" />
+            <span
+              className="inline-flex items-center gap-1.5"
+              title="Number of uncovered or understaffed brand-process slots on that date"
+            >
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-600 text-white text-[10px] font-bold tabular-nums">
+                N
+              </span>
+              <span>Daily Coverage Gaps</span>
+            </span>
+            <span
+              className="inline-flex items-center gap-1.5"
+              title="All operating brand-process slots are covered on that date"
+            >
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-50 text-emerald-600">
+                <Check className="w-3 h-3" />
+              </span>
+              <span>All Covered</span>
+            </span>
           </div>
           <span className="text-slate-500">Click any cell to override status &amp; re-validate live</span>
         </div>
@@ -544,6 +563,25 @@ export default function RosterViews({
               </span>
             )
           )}
+          <span className="h-3.5 w-px bg-neutral-200 hidden sm:inline-block" aria-hidden="true" />
+          <span
+            className="inline-flex items-center gap-1"
+            title="Red badge = number of uncovered or understaffed brand-process slots on that date"
+          >
+            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-bold tabular-nums">
+              N
+            </span>
+            <span className="hidden xl:inline text-neutral-500">Coverage Gaps</span>
+          </span>
+          <span
+            className="inline-flex items-center gap-1"
+            title="Green check = all operating slots covered on that date"
+          >
+            <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-emerald-50 text-emerald-600">
+              <Check className="w-2.5 h-2.5" />
+            </span>
+            <span className="hidden xl:inline text-neutral-500">All Covered</span>
+          </span>
         </div>
       </div>
 
