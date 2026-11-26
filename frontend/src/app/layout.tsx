@@ -19,6 +19,14 @@ export const metadata: Metadata = {
   title: "Smart Roster — Operations Scheduling & Conflict Command Center",
   description:
     "Deterministic demand-vs-supply operational scheduling, conflict detection, and live backup resolution for D2C CX teams.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96" fill="none">
+  <defs>
+    <linearGradient id="logoBg" x1="8" y1="8" x2="88" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E40AF" />
+      <stop offset="45%" stop-color="#2563EB" />
+      <stop offset="85%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0D9488" />
+    </linearGradient>
+    <linearGradient id="logoGlow" x1="12" y1="12" x2="84" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="tokenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#2DD4BF" />
+    </linearGradient>
+    <linearGradient id="logoSpark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+    <filter id="logoShadow" x="-10%" y="-10%" width="125%" height="135%" filterUnits="objectBoundingBox">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0F172A" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <!-- Icon (0 to 96) -->
+  <g transform="translate(6, 6) scale(0.65625)">
+    <!-- Base squircle -->
+    <rect x="6" y="6" width="116" height="116" rx="28" fill="url(#logoBg)" />
+    <rect x="6.75" y="6.75" width="114.5" height="114.5" rx="27.25" stroke="url(#logoGlow)" stroke-width="1.5" />
+
+    <g filter="url(#logoShadow)">
+      <rect x="25" y="32" width="48" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.95" />
+      <circle cx="89" cy="41" r="9" fill="#38BDF8" fill-opacity="0.85" />
+      <circle cx="89" cy="41" r="4" fill="#FFFFFF" />
+
+      <path d="M64 41 C76 41, 78 55, 68 65" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 3" opacity="0.4" />
+
+      <rect x="42" y="55" width="61" height="18" rx="9" fill="url(#tokenGrad)" />
+      <circle cx="53" cy="64" r="3.5" fill="#FFFFFF" />
+      <rect x="63" y="61.5" width="30" height="5" rx="2.5" fill="#FFFFFF" fill-opacity="0.8" />
+
+      <rect x="25" y="78" width="54" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.95" />
+      <rect x="86" y="78" width="17" height="18" rx="8.5" fill="#FFFFFF" fill-opacity="0.3" stroke="#FFFFFF" stroke-width="1.5" />
+    </g>
+
+    <path d="M101 16 L103 23 L110 25 L103 27 L101 34 L99 27 L92 25 L99 23 Z" fill="url(#logoSpark)" />
+  </g>
+
+  <!-- Typography: Smart Roster -->
+  <text x="108" y="48" font-family="Plus Jakarta Sans, system-ui, -apple-system, sans-serif" font-size="27" font-weight="800" fill="#0A0A0A" letter-spacing="-0.03em">Smart Roster</text>
+  <text x="109" y="71" font-family="Plus Jakarta Sans, system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#64748B" letter-spacing="0.04em">WORKFORCE INTELLIGENCE</text>
+</svg>

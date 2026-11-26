@@ -45,3 +45,6 @@ yarn-error.log*
 quality-checks
 
 usecases.md
+
+.agents/
+skills-lock.json

@@ -60,6 +60,7 @@ import RosterViews from "@/components/RosterViews";
 import ConflictDrawer from "@/components/ConflictDrawer";
 import ManagementTabs, { ManagementSubTab } from "@/components/ManagementTabs";
 import PlanComparisonModal from "@/components/PlanComparisonModal";
+import SmartRosterLogo from "@/components/SmartRosterLogo";
 
 function formatNotificationTime(iso: string): string {
   if (!iso) return "";
@@ -304,9 +305,7 @@ export default function HomePage() {
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 py-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Brand & Status */}
           <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-teal-500 text-white flex items-center justify-center shadow-sm shadow-blue-600/20">
-              <Layers className="w-4 h-4" />
-            </div>
+            <SmartRosterLogo size={40} className="shadow-md shadow-blue-600/25 rounded-2xl" />
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-base sm:text-lg font-bold tracking-tight text-neutral-950">
