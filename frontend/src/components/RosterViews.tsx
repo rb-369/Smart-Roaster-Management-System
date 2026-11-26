@@ -271,7 +271,7 @@ export default function RosterViews({
             <thead className="sticky top-0 z-30 bg-neutral-50 border-b border-neutral-200">
               {/* Day Header Row */}
               <tr>
-                <th className="sticky left-0 z-40 bg-neutral-50 border-r border-neutral-200 px-3 py-2.5 text-left font-semibold text-slate-700 min-w-[210px]">
+                <th className="sticky left-0 z-40 bg-neutral-50 border-r-2 border-neutral-300 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)] px-3 py-2.5 text-left font-semibold text-slate-700 min-w-[220px]">
                   Employee / Pod
                 </th>
                 {dates.map((d) => {
@@ -300,7 +300,7 @@ export default function RosterViews({
 
               {/* Daily Coverage Health Summary Row */}
               <tr className="bg-white border-b-2 border-neutral-300">
-                <th className="sticky left-0 z-40 bg-white border-r-2 border-neutral-200 px-3 py-2 text-left text-[11px] font-semibold text-neutral-600 uppercase tracking-wider">
+                <th className="sticky left-0 z-40 bg-white border-r-2 border-neutral-300 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)] px-3 py-2 text-left text-[11px] font-semibold text-neutral-600 uppercase tracking-wider">
                   Daily Coverage Health
                 </th>
                 {dates.map((d) => {
@@ -331,18 +331,23 @@ export default function RosterViews({
 
             <tbody className="divide-y divide-neutral-200">
               {groups.map((grp, gIdx) => {
-                const podDotColors = ["bg-rose-500", "bg-sky-500", "bg-emerald-500", "bg-amber-500"];
-                const podDot = podDotColors[gIdx % podDotColors.length];
+                const podThemes = [
+                  { dot: "bg-rose-500", border: "border-l-rose-500", headerBg: "bg-rose-50/60" },
+                  { dot: "bg-sky-500", border: "border-l-sky-500", headerBg: "bg-sky-50/60" },
+                  { dot: "bg-emerald-500", border: "border-l-emerald-500", headerBg: "bg-emerald-50/60" },
+                  { dot: "bg-amber-500", border: "border-l-amber-500", headerBg: "bg-amber-50/60" },
+                ];
+                const theme = podThemes[gIdx % podThemes.length];
                 return (
                 <React.Fragment key={grp.pod?.id || `grp-${gIdx}`}>
                   {grp.pod && (
-                    <tr className="bg-neutral-100/95 border-y-2 border-neutral-300">
+                    <tr className={`${theme.headerBg} border-t-2 border-b border-neutral-300`}>
                       <td
                         colSpan={dates.length + 1}
-                        className="sticky left-0 px-3 py-2 text-[11px] font-bold text-neutral-800 uppercase tracking-wider"
+                        className={`px-3 py-2.5 text-[11px] font-bold text-neutral-900 uppercase tracking-wider border-l-4 ${theme.border}`}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${podDot}`} />
+                        <div className="sticky left-3 inline-flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${theme.dot}`} />
                           <span>
                             {grp.pod.name} ({grp.pod.id})
                           </span>
@@ -350,20 +355,34 @@ export default function RosterViews({
                           <span className="text-neutral-600 font-semibold">
                             Lead: {empMap.get(grp.pod.lead_employee_id)?.name || grp.pod.lead_employee_id}
                           </span>
+                          <span className="px-1.5 py-0.5 rounded-full bg-white/80 border border-neutral-200 text-[10px] font-semibold text-neutral-600 normal-case tracking-normal">
+                            {grp.emps.length} staff
+                          </span>
                         </div>
                       </td>
                     </tr>
                   )}
                   {grp.emps.map((emp) => (
-                    <tr key={emp.id} className="bg-white even:bg-neutral-50/40 hover:bg-slate-50 transition-colors">
-                      <td className="sticky left-0 z-20 bg-white border-r-2 border-neutral-200 px-3 py-2">
+                    <tr
+                      key={emp.id}
+                      className={`${
+                        emp.role === "POD_LEAD" ? "bg-blue-50/30" : "bg-white even:bg-neutral-50/40"
+                      } hover:bg-slate-50 transition-colors`}
+                    >
+                      <td
+                        className={`sticky left-0 z-20 ${
+                          emp.role === "POD_LEAD" ? "bg-blue-50/95" : "bg-white"
+                        } border-r-2 border-neutral-300 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)] ${
+                          grp.pod ? `border-l-4 ${theme.border}` : ""
+                        } px-3 py-2`}
+                      >
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
                             <div className="font-semibold text-neutral-900 truncate">{emp.name}</div>
                             <div className="text-[10px] text-neutral-500 font-mono flex items-center gap-1.5">
                               <span>{emp.id}</span>
                               {emp.role === "POD_LEAD" && (
-                                <span className="px-1.5 py-0.2 rounded-full bg-neutral-100 text-neutral-800 border border-neutral-200 font-sans font-semibold">
+                                <span className="px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-800 border border-blue-200 font-sans font-semibold">
                                   LEAD
                                 </span>
                               )}
