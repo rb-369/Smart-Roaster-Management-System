@@ -528,11 +528,12 @@ export default function RosterViews({
               <button
                 key={tab.id}
                 type="button"
+                aria-pressed={active}
                 onClick={() => setActiveView(tab.id)}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
+                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                   active
                     ? "bg-blue-600 text-white shadow-sm shadow-blue-600/15"
-                    : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
+                    : "bg-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />

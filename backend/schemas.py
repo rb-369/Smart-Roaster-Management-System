@@ -92,3 +92,34 @@ class MonthlyRosterResponse(BaseModel):
     entries: List[RosterEntryDTO]
     coverage_matrix: List[DailyCoverageDTO]
     conflicts: List[ConflictDTO]
+
+
+class LeavePreviewRequest(BaseModel):
+    employee_id: str
+    start_date: str
+    end_date: str
+    type: str = "PLANNED_LEAVE"
+
+
+class AffectedBrandDTO(BaseModel):
+    brand_id: str
+    brand_name: str
+
+
+class LeaveImpactPreviewResponse(BaseModel):
+    month: str
+    leave_id: Optional[str] = None
+    employee_id: str
+    employee_name: Optional[str] = None
+    start_date: str
+    end_date: str
+    type: str
+    hard_conflicts_before: int
+    hard_conflicts_after: int
+    new_hard_conflicts_count: int
+    coverage_before: float
+    coverage_after: float
+    affected_dates: List[str]
+    affected_brands: List[AffectedBrandDTO]
+    affected_processes: List[str]
+    new_conflicts: List[ConflictDTO]

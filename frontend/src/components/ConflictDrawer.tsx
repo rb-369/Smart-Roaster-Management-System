@@ -10,13 +10,16 @@ import {
   Loader2,
   CheckCircle2,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import {
+  AutoResolveResponse,
   Conflict,
   ExplainConflictResponse,
   MonthlyRosterResponse,
   SuggestedResolution,
   assignBackup,
+  autoResolveGaps,
   explainConflict,
 } from "@/lib/api";
 
@@ -40,6 +43,8 @@ export default function ConflictDrawer({
   const [severityFilter, setSeverityFilter] = useState<"ALL" | "HARD" | "SOFT">(initialSeverity);
   const [searchQuery, setSearchQuery] = useState("");
   const [assigningKey, setAssigningKey] = useState<string | null>(null);
+  const [autoResolving, setAutoResolving] = useState(false);
+  const [autoResolveResult, setAutoResolveResult] = useState<AutoResolveResponse | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [explainingKey, setExplainingKey] = useState<string | null>(null);
@@ -49,6 +54,8 @@ export default function ConflictDrawer({
   React.useEffect(() => {
     if (open) {
       setSeverityFilter(initialSeverity);
+    } else {
+      setAutoResolveResult(null);
     }
   }, [open, initialSeverity]);
 
@@ -113,6 +120,22 @@ export default function ConflictDrawer({
     }
   };
 
+  const handleAutoResolve = async () => {
+    try {
+      setAutoResolving(true);
+      setErrorMsg(null);
+      setFeedback(null);
+      setAutoResolveResult(null);
+      const res = await autoResolveGaps(month, 70);
+      onRosterUpdated(res.roster);
+      setAutoResolveResult(res);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to auto-resolve gaps");
+    } finally {
+      setAutoResolving(false);
+    }
+  };
+
   const handleExplainConflict = async (conflict: Conflict, cardKey: string) => {
     try {
       setExplainingKey(cardKey);
@@ -137,8 +160,8 @@ export default function ConflictDrawer({
       {/* Drawer Panel */}
       <aside className="relative z-10 w-full max-w-2xl bg-neutral-50 border-l border-neutral-200 shadow-2xl flex flex-col h-full">
         {/* Header */}
-        <div className="bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
-          <div>
+        <div className="bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="text-lg font-bold tracking-tight text-neutral-950">
               Conflict &amp; Resolution Center
             </h2>
@@ -146,14 +169,29 @@ export default function ConflictDrawer({
               {hardCount} Hard Conflicts (coverage gaps) &middot; {softCount} Soft Warnings (off preferences)
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-full text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100 transition-colors"
-            aria-label="Close Conflict Drawer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              disabled={hardCount === 0 || autoResolving}
+              onClick={handleAutoResolve}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {autoResolving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Zap className="w-3.5 h-3.5" />
+              )}
+              {autoResolving ? "Auto-Resolving..." : "Auto-Resolve Solvable Gaps (Score ≥ 70)"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-full text-neutral-500 hover:text-neutral-950 hover:bg-neutral-100 transition-colors"
+              aria-label="Close Conflict Drawer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Filter Bar */}
@@ -195,9 +233,44 @@ export default function ConflictDrawer({
           </div>
         </div>
 
-        {/* Feedback / Errors */}
-        {(feedback || errorMsg) && (
+        {/* Feedback / Errors / Auto-Resolve Banner */}
+        {(feedback || errorMsg || autoResolveResult) && (
           <div className="px-5 pt-3 space-y-2">
+            {autoResolveResult && (
+              <div className="bg-teal-50 border border-teal-200 text-teal-900 px-3.5 py-2.5 rounded-lg text-xs space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <CheckCircle2 className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                    <span>
+                      Resolved {autoResolveResult.resolved_count}{" "}
+                      {autoResolveResult.resolved_count === 1 ? "gap" : "gaps"} &bull; Coverage
+                      jumped from{" "}
+                      <span className="tabular-nums">
+                        {autoResolveResult.coverage_before.toFixed(1)}%
+                      </span>{" "}
+                      &rarr;{" "}
+                      <span className="tabular-nums">
+                        {autoResolveResult.coverage_after.toFixed(1)}%
+                      </span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAutoResolveResult(null)}
+                    className="text-teal-600 hover:text-teal-900 p-0.5 rounded transition-colors"
+                    aria-label="Dismiss auto-resolve banner"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {autoResolveResult.remaining_hard_conflicts > 0 &&
+                  autoResolveResult.structural_gaps_summary && (
+                    <p className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 leading-relaxed">
+                      {autoResolveResult.structural_gaps_summary}
+                    </p>
+                  )}
+              </div>
+            )}
             {feedback && (
               <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3.5 py-2 rounded-lg text-xs font-medium">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
@@ -225,6 +298,11 @@ export default function ConflictDrawer({
           ) : (
             filteredConflicts.map((conf, idx) => {
               const isHard = conf.severity === "HARD";
+              const isStructuralGap =
+                isHard &&
+                (!conf.suggested_resolutions ||
+                  conf.suggested_resolutions.length === 0 ||
+                  !conf.suggested_resolutions.some((cand) => cand.score >= 70));
               const cardKey = `${conf.date}-${conf.conflict_type}-${conf.brand_id}-${conf.process_id}-${conf.employee_id}-${idx}`;
               const explanation = explanations[cardKey];
               const isExplaining = explainingKey === cardKey;
@@ -254,6 +332,11 @@ export default function ConflictDrawer({
                       <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         {conf.conflict_type.replace(/_/g, " ")}
                       </span>
+                      {isStructuralGap && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                          Structural Gap (Extra Headcount Needed)
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <button

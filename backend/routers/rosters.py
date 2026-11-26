@@ -13,6 +13,8 @@ from pydantic import BaseModel
 from sqlmodel import Session, delete, select
 
 from database import get_session
+from engine.auto_resolver import auto_resolve_gaps
+from engine.bottlenecks import analyze_bottlenecks
 from engine.scheduler import generate_roster, recalculate_coverage_and_validate
 from models import (
     Allocation,
@@ -72,11 +74,16 @@ class ExplainConflictRequest(BaseModel):
     date: str
     conflict_type: str
     severity: str
+    brand_id: Optional[str] = None
+    process_id: Optional[str] = None
     brand_name: Optional[str] = None
     process_name: Optional[str] = None
     employee_name: Optional[str] = None
     message: str
     suggested_resolutions: List[Dict[str, Any]] = []
+
+
+_AI_EXPLAIN_CACHE: Dict[tuple, Dict[str, Any]] = {}
 
 
 STATUS_CODE_MAP = {
@@ -741,19 +748,12 @@ def _deterministic_explain(payload: ExplainConflictRequest) -> Dict[str, Any]:
     return {
         "explanation": explanation,
         "action_steps": action_steps[:3],
-        "provider": "Deterministic Smart Engine",
+        "provider": "Deterministic Fallback",
     }
 
 
-@router.post("/{month}/explain-conflict")
-def explain_conflict(
-    payload: ExplainConflictRequest,
-    month: str = Path(..., pattern=r"^\d{4}-\d{2}$"),
-):
-    """
-    Explain a roster conflict and suggest concrete action steps using AI providers
-    (OpenRouter -> Gemini -> NVIDIA NIM) with a deterministic fallback.
-    """
+def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequest) -> Dict[str, Any]:
+    """Try OpenRouter -> Gemini -> NVIDIA NIM (timeout=8.0s each), falling back deterministically."""
     prompt = (
         f"You are an operations workforce planning assistant for roster month {month}.\n"
         f"Conflict: {payload.severity} {payload.conflict_type} on {payload.date}.\n"
@@ -839,6 +839,152 @@ def explain_conflict(
 
     # 4. Deterministic Fallback
     return _deterministic_explain(payload)
+
+
+@router.post("/{month}/explain-conflict")
+def explain_conflict(
+    payload: ExplainConflictRequest,
+    month: str = Path(..., pattern=r"^\d{4}-\d{2}$"),
+):
+    """
+    Explain a roster conflict and suggest concrete action steps using AI providers
+    (OpenRouter -> Gemini -> NVIDIA NIM) with an in-memory cache and deterministic fallback.
+    """
+    cache_key = (
+        month,
+        payload.conflict_type,
+        payload.brand_id or "",
+        payload.brand_name or "",
+        payload.process_id or "",
+        payload.process_name or "",
+        payload.date,
+    )
+    cached = _AI_EXPLAIN_CACHE.get(cache_key)
+    if cached is not None:
+        return dict(cached)
+
+    result = _resolve_conflict_explanation(month, payload)
+    _AI_EXPLAIN_CACHE[cache_key] = dict(result)
+    return result
+
+
+@router.post("/{month}/auto-resolve")
+def auto_resolve_roster_gaps(
+    month: str = Path(..., pattern=r"^\d{4}-\d{2}$"),
+    min_score: int = Query(70, ge=0, le=100),
+    session: Session = Depends(get_session),
+):
+    """
+    1-click batch auto-resolver: assigns highest-scoring eligible backups
+    (score >= min_score, max 1 backup per employee per day), persists updates,
+    and returns resolution metrics plus updated roster.
+    """
+    roster_id = f"ROST-{month}"
+    db_roster = session.get(Roster, roster_id)
+    if not db_roster:
+        raise HTTPException(status_code=404, detail=f"Roster for '{month}' not found")
+
+    domain = _fetch_domain_data(session)
+    entries_db = session.exec(
+        select(RosterEntry).where(RosterEntry.roster_id == roster_id)
+    ).all()
+    db_entry_map = {(e.employee_id, e.date): e for e in entries_db}
+    entry_dicts = [
+        {
+            "employee_id": e.employee_id,
+            "date": e.date,
+            "status": e.status,
+            "assigned_brand_id": e.assigned_brand_id,
+            "assigned_process_id": e.assigned_process_id,
+            "is_manual_override": e.is_manual_override,
+            "notes": e.notes,
+        }
+        for e in entries_db
+    ]
+
+    result = auto_resolve_gaps(
+        month_str=db_roster.month,
+        entries=entry_dicts,
+        employees=domain["employees"],
+        brands=domain["brands"],
+        processes=domain["processes"],
+        brand_process_rules=domain["brand_process_rules"],
+        allocations=domain["allocations"],
+        public_holidays=domain["public_holidays"],
+        leaves_and_compoffs=domain["leaves_and_compoffs"],
+        min_score=min_score,
+        roster_status=db_roster.status,
+        generated_at=db_roster.generated_at,
+    )
+
+    for updated_entry in result["roster"]["entries"]:
+        db_entry = db_entry_map.get((updated_entry["employee_id"], updated_entry["date"]))
+        if not db_entry:
+            continue
+        if (
+            db_entry.status != updated_entry["status"]
+            or db_entry.assigned_brand_id != updated_entry.get("assigned_brand_id")
+            or db_entry.assigned_process_id != updated_entry.get("assigned_process_id")
+            or db_entry.is_manual_override != updated_entry.get("is_manual_override", False)
+            or db_entry.notes != updated_entry.get("notes")
+        ):
+            db_entry.status = updated_entry["status"]
+            db_entry.assigned_brand_id = updated_entry.get("assigned_brand_id")
+            db_entry.assigned_process_id = updated_entry.get("assigned_process_id")
+            db_entry.is_manual_override = updated_entry.get("is_manual_override", False)
+            db_entry.notes = updated_entry.get("notes")
+            session.add(db_entry)
+
+    session.commit()
+    _persist_conflicts(session, roster_id, result["roster"]["conflicts"])
+
+    if db_roster.status == "PUBLISHED":
+        _create_notification(
+            session=session,
+            roster_id=roster_id,
+            month=month,
+            event_type="AUTO_RESOLVED",
+            message=(
+                f"Auto-resolved {result['resolved_count']} gap(s) on published roster {month}; "
+                f"coverage {result['coverage_before']}% -> {result['coverage_after']}% "
+                f"({result['remaining_hard_conflicts']} hard conflict(s) remaining)."
+            ),
+            actor_role="OPS_MANAGER",
+        )
+
+    return result
+
+
+@router.get("/{month}/bottlenecks")
+def get_roster_bottlenecks(
+    month: str = Path(..., pattern=r"^\d{4}-\d{2}$"),
+    session: Session = Depends(get_session),
+):
+    """
+    Analyze persisted conflicts for the month to surface top bottleneck pods,
+    top bottleneck brands, and concrete hiring/cross-training recommendations.
+    """
+    roster_id = f"ROST-{month}"
+    db_roster = session.get(Roster, roster_id)
+    if not db_roster:
+        raise HTTPException(status_code=404, detail=f"Roster for '{month}' not found")
+
+    conflicts = [
+        c.model_dump()
+        for c in session.exec(
+            select(RosterConflict).where(RosterConflict.roster_id == roster_id)
+        ).all()
+    ]
+    employees = [e.model_dump() for e in session.exec(select(Employee)).all()]
+    brands = [b.model_dump() for b in session.exec(select(Brand)).all()]
+    pods = [p.model_dump() for p in session.exec(select(Pod)).all()]
+
+    return analyze_bottlenecks(
+        conflicts=conflicts,
+        employees=employees,
+        brands=brands,
+        pods=pods,
+    )
 
 
 @router.get("/{month}", response_model=MonthlyRosterResponse)

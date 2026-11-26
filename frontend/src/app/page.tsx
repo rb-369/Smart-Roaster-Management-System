@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import {
   Allocation,
+  BottlenecksResponse,
   Brand,
   BrandProcessRule,
   Employee,
@@ -34,6 +35,7 @@ import {
   PublicHoliday,
   approvePodRoster,
   fetchAllocations,
+  fetchBottlenecks,
   fetchBrands,
   fetchEmployees,
   fetchHealth,
@@ -53,10 +55,27 @@ import {
 } from "@/lib/api";
 import KpiBar from "@/components/KpiBar";
 import PendingLeavesBanner from "@/components/PendingLeavesBanner";
+import BottleneckInsights from "@/components/BottleneckInsights";
 import RosterViews from "@/components/RosterViews";
 import ConflictDrawer from "@/components/ConflictDrawer";
 import ManagementTabs, { ManagementSubTab } from "@/components/ManagementTabs";
 import PlanComparisonModal from "@/components/PlanComparisonModal";
+
+function formatNotificationTime(iso: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  } catch {
+    return iso;
+  }
+}
 
 export default function HomePage() {
   const [month, setMonth] = useState("2026-12");
@@ -64,11 +83,13 @@ export default function HomePage() {
   const [setupInitialTab, setSetupInitialTab] = useState<ManagementSubTab>("team");
 
   const [healthStatus, setHealthStatus] = useState<"checking" | "connected" | "error">("checking");
+  const [initializing, setInitializing] = useState(true);
   const [loadingRoster, setLoadingRoster] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [rosterData, setRosterData] = useState<MonthlyRosterResponse | null>(null);
+  const [bottlenecks, setBottlenecks] = useState<BottlenecksResponse | null>(null);
   const [pods, setPods] = useState<Pod[]>([]);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -119,14 +140,20 @@ export default function HomePage() {
     setNotifications(list);
   }, []);
 
+  const loadBottlenecks = useCallback(async (targetMonth: string) => {
+    const data = await fetchBottlenecks(targetMonth).catch(() => null);
+    setBottlenecks(data);
+  }, []);
+
   const handleRosterUpdated = useCallback(
     (updated: MonthlyRosterResponse) => {
       setRosterData(updated);
+      loadBottlenecks(updated.month);
       if (updated.status === "PUBLISHED") {
         loadNotifications(updated.month);
       }
     },
-    [loadNotifications]
+    [loadBottlenecks, loadNotifications]
   );
 
   const loadOrGenerateRoster = useCallback(async (targetMonth: string) => {
@@ -145,25 +172,29 @@ export default function HomePage() {
           throw err;
         }
       }
-      await loadNotifications(targetMonth);
+      await Promise.all([loadNotifications(targetMonth), loadBottlenecks(targetMonth)]);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Failed to load roster from backend.");
     } finally {
       setLoadingRoster(false);
     }
-  }, [loadNotifications]);
+  }, [loadBottlenecks, loadNotifications]);
 
   useEffect(() => {
     const init = async () => {
       try {
-        setHealthStatus("checking");
-        await fetchHealth();
-        setHealthStatus("connected");
-      } catch {
-        setHealthStatus("error");
+        try {
+          setHealthStatus("checking");
+          await fetchHealth();
+          setHealthStatus("connected");
+        } catch {
+          setHealthStatus("error");
+        }
+        await loadEntities();
+        await loadOrGenerateRoster(month);
+      } finally {
+        setInitializing(false);
       }
-      await loadEntities();
-      await loadOrGenerateRoster(month);
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -175,7 +206,7 @@ export default function HomePage() {
       setErrorMsg(null);
       const generated = await generateMonthlyRoster(month);
       setRosterData(generated);
-      await loadEntities();
+      await Promise.all([loadEntities(), loadBottlenecks(month)]);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Failed to generate roster.");
     } finally {
@@ -191,6 +222,7 @@ export default function HomePage() {
       await loadEntities();
       const generated = await generateMonthlyRoster(month);
       setRosterData(generated);
+      await loadBottlenecks(month);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Failed to reset demo data.");
     } finally {
@@ -452,7 +484,7 @@ export default function HomePage() {
                           <p className="text-neutral-600 leading-relaxed">{n.message}</p>
                           <div className="text-[10px] text-neutral-400 tabular-nums">
                             {n.actor ? `${n.actor} · ` : ""}
-                            {n.created_at}
+                            {formatNotificationTime(n.created_at)}
                           </div>
                         </div>
                       ))
@@ -612,17 +644,38 @@ export default function HomePage() {
         )}
 
         {/* KPI Bar */}
-        <KpiBar
-          kpis={rosterData?.kpis || null}
-          totalEmployeesFallback={employees.length}
-          pendingLeavesCount={pendingLeavesCount}
-          podCount={pods.length}
-          onOpenConflicts={openConflictsDrawer}
-          onJumpToLeaves={() => {
-            setSetupInitialTab("leaves");
-            setMainSection("setup");
-          }}
-        />
+        {initializing ? (
+          <div
+            className="grid grid-cols-2 lg:grid-cols-5 gap-3"
+            aria-label="Loading metrics"
+          >
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="bg-white border border-neutral-200 rounded-2xl p-4 animate-pulse"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="h-3 w-24 bg-neutral-200 rounded" />
+                  <div className="w-7 h-7 rounded-lg bg-neutral-100" />
+                </div>
+                <div className="h-7 w-16 bg-neutral-200 rounded-md mt-1" />
+                <div className="h-3 w-28 bg-neutral-100 rounded mt-2.5" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <KpiBar
+            kpis={rosterData?.kpis || null}
+            totalEmployeesFallback={employees.length}
+            pendingLeavesCount={pendingLeavesCount}
+            podCount={pods.length}
+            onOpenConflicts={openConflictsDrawer}
+            onJumpToLeaves={() => {
+              setSetupInitialTab("leaves");
+              setMainSection("setup");
+            }}
+          />
+        )}
 
         {/* Pending Leaves Banner (DEMO-4 Live Flow) */}
         <PendingLeavesBanner
@@ -637,19 +690,41 @@ export default function HomePage() {
 
         {/* Workspace vs Setup */}
         {mainSection === "workspace" ? (
-          rosterData ? (
-            <RosterViews
-              month={month}
-              roster={rosterData}
-              pods={pods}
-              processes={processes}
-              employees={employees}
-              brands={brands}
-              rules={rules}
-              allocations={allocations}
-              holidays={holidays}
-              onRosterUpdated={handleRosterUpdated}
-            />
+          initializing ? (
+            <div className="bg-white border border-neutral-200 rounded-2xl p-12 text-center shadow-xs">
+              <div className="inline-flex flex-col items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-neutral-950">
+                    Waking up scheduling engine...
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    Connecting to backend and loading roster data for {month}.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : rosterData ? (
+            <div className="space-y-6">
+              <BottleneckInsights
+                data={bottlenecks}
+                onOpenConflicts={() => openConflictsDrawer("HARD")}
+              />
+              <RosterViews
+                month={month}
+                roster={rosterData}
+                pods={pods}
+                processes={processes}
+                employees={employees}
+                brands={brands}
+                rules={rules}
+                allocations={allocations}
+                holidays={holidays}
+                onRosterUpdated={handleRosterUpdated}
+              />
+            </div>
           ) : (
             <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-12 text-center">
               {loadingRoster ? (
@@ -686,7 +761,7 @@ export default function HomePage() {
             holidays={holidays}
             initialSubTab={setupInitialTab}
             onEntitiesChanged={loadEntities}
-            onRosterUpdated={setRosterData}
+            onRosterUpdated={handleRosterUpdated}
           />
         )}
       </main>

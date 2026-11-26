@@ -21,6 +21,75 @@ def get_month_dates(month_str: str) -> List[date]:
     return [date(year, month, d) for d in range(1, num_days + 1)]
 
 
+def _emp_weekday_demand(
+    e_id: str,
+    wd: int,
+    emp_primary_rules: Dict[str, List[Dict[str, Any]]],
+) -> int:
+    """Compute single-day staffing demand across an employee's primary brand-process rules."""
+    total = 0
+    for r in emp_primary_rules.get(e_id, []):
+        cal = r.get("calendar_type", "365_DAYS")
+        if cal == "MON_SAT_EXCEPT_PH" and wd == 6:
+            continue
+        base_m = r.get("min_staffing", 1)
+        ov = r.get("day_min_staffing_overrides", {})
+        total += ov.get(str(wd), base_m)
+    return total
+
+
+def _emp_unbacked_monthly_demand(
+    e_id: str,
+    wd: int,
+    emp_primary_rules: Dict[str, List[Dict[str, Any]]],
+    primary_allocations_by_bp: Dict[tuple, List[str]],
+    backup_allocations_by_bp: Dict[tuple, List[str]],
+    month_dates: List[date],
+    ph_dates: Set[str],
+) -> int:
+    """Compute monthly unbacked staffing shortfall if e_id takes weekday wd off."""
+    total = 0
+    rules = emp_primary_rules.get(e_id, [])
+    if not rules:
+        return 0
+    for d_obj in month_dates:
+        if d_obj.weekday() != wd:
+            continue
+        is_ph = d_obj.strftime("%Y-%m-%d") in ph_dates
+        for r in rules:
+            bp_key = (r["brand_id"], r["process_id"])
+            req = get_required_staffing(
+                r.get("calendar_type", "365_DAYS"),
+                d_obj,
+                is_ph,
+                r.get("min_staffing", 1),
+                r.get("day_min_staffing_overrides", {}),
+            )
+            if req == 0:
+                continue
+            other_primaries = max(0, len(primary_allocations_by_bp.get(bp_key, [])) - 1)
+            backups = len(backup_allocations_by_bp.get(bp_key, []))
+            if other_primaries + backups < req:
+                total += req - other_primaries - backups
+    return total
+
+
+def _collect_peer_offs(
+    e_id: str,
+    primary_allocations_by_bp: Dict[tuple, List[str]],
+    assigned_offs: Dict[str, int],
+    allowed_peers: Optional[Set[str]] = None,
+) -> Set[int]:
+    """Return assigned off weekdays of peers sharing any multi-resource team with e_id."""
+    peer_offs: Set[int] = set()
+    for emp_ids in primary_allocations_by_bp.values():
+        if e_id in emp_ids and len(emp_ids) > 1:
+            for p_id in emp_ids:
+                if p_id != e_id and (allowed_peers is None or p_id in allowed_peers):
+                    peer_offs.add(assigned_offs[p_id])
+    return peer_offs
+
+
 def generate_roster(
     month_str: str,
     employees: List[Dict[str, Any]],
@@ -100,6 +169,11 @@ def generate_roster(
     # Map (emp_id, date_str) -> bool indicating if date_str is weekly off for emp_id
     emp_weekly_off_dates: Dict[str, Set[str]] = defaultdict(set)
 
+    emp_primary_bp: Dict[str, tuple] = {}
+    for bp_key, emp_ids in primary_allocations_by_bp.items():
+        for e_id in emp_ids:
+            emp_primary_bp.setdefault(e_id, bp_key)
+
     if strategy == "PREFERENCE_FIRST":
         # Strictly honor every employee's preferred_weekly_off (no staggering)
         for emp in employees:
@@ -108,75 +182,34 @@ def generate_roster(
             for d_obj in month_dates:
                 if d_obj.weekday() == pref:
                     emp_weekly_off_dates[e_id].add(d_obj.strftime("%Y-%m-%d"))
-    else:
-        # BALANCED or COVERAGE_FIRST
+    elif strategy == "COVERAGE_FIRST":
         assigned_offs: Dict[str, int] = {
             emp["id"]: emp.get("default_weekly_off", 6) for emp in employees
         }
-        if strategy == "COVERAGE_FIRST":
-            # Pick the weekday with minimum total primary demand for each employee,
-            # while keeping multi-resource peers staggered on distinct weekdays.
-            def _emp_weekday_demand(e_id: str, wd: int) -> int:
-                total = 0
-                for r in emp_primary_rules.get(e_id, []):
-                    cal = r.get("calendar_type", "365_DAYS")
-                    if cal == "MON_SAT_EXCEPT_PH" and wd == 6:
-                        continue
-                    base_m = r.get("min_staffing", 1)
-                    ov = r.get("day_min_staffing_overrides", {})
-                    total += ov.get(str(wd), base_m)
-                return total
-
-            for emp in employees:
-                e_id = emp["id"]
-                rules = emp_primary_rules.get(e_id, [])
-                if not rules:
-                    continue
-                cur_off = assigned_offs[e_id]
-                # Collect peer offs across all multi-resource teams this employee is in
-                peer_offs: Set[int] = set()
-                for bp_key, emp_ids in primary_allocations_by_bp.items():
-                    if e_id in emp_ids and len(emp_ids) > 1:
-                        for p_id in emp_ids:
-                            if p_id != e_id:
-                                peer_offs.add(assigned_offs[p_id])
-
-                # Rank weekdays by: (collides with peer, total demand, wd != cur_off)
-                best_wd = min(
-                    range(7),
-                    key=lambda wd: (
-                        1 if wd in peer_offs else 0,
-                        _emp_weekday_demand(e_id, wd),
-                        0 if wd == cur_off else 1,
-                    ),
-                )
-                assigned_offs[e_id] = best_wd
-        # Track rotational employees in multi-resource teams for Sunday fairness rotation
-        rotational_info: Dict[str, Dict[str, Any]] = {}
-        # Track primary brand_process for preference override reporting
-        emp_primary_bp: Dict[str, tuple] = {}
-        for bp_key, emp_ids in primary_allocations_by_bp.items():
-            for e_id in emp_ids:
-                emp_primary_bp.setdefault(e_id, bp_key)
+        # Pick the weekday with minimum total primary demand for each employee,
+        # while keeping multi-resource peers staggered on distinct weekdays.
+        for emp in employees:
+            e_id = emp["id"]
+            if not emp_primary_rules.get(e_id):
+                continue
+            cur_off = assigned_offs[e_id]
+            peer_offs = _collect_peer_offs(e_id, primary_allocations_by_bp, assigned_offs)
+            assigned_offs[e_id] = min(
+                range(7),
+                key=lambda wd: (
+                    1 if wd in peer_offs else 0,
+                    _emp_weekday_demand(e_id, wd, emp_primary_rules),
+                    0 if wd == cur_off else 1,
+                ),
+            )
 
         for bp_key, emp_ids in primary_allocations_by_bp.items():
             if len(emp_ids) > 1:
                 used_offs_in_pair: Set[int] = set()
-                fixed_offs_in_pair: Set[int] = set()
-                for e_id in emp_ids:
-                    emp = emp_dict.get(e_id, {})
-                    if emp.get("weekly_off_rule", "FIXED") != "ROTATIONAL" and strategy == "BALANCED":
-                        fixed_offs_in_pair.add(emp.get("default_weekly_off", 6))
-
                 for e_id in emp_ids:
                     emp = emp_dict.get(e_id, {})
                     off = assigned_offs.get(e_id, emp.get("default_weekly_off", 6))
-                    rule = emp.get("weekly_off_rule", "FIXED")
-                    should_stagger = (
-                        off in used_offs_in_pair
-                        and (rule == "ROTATIONAL" or strategy == "COVERAGE_FIRST")
-                    )
-                    if should_stagger:
+                    if off in used_offs_in_pair:
                         new_off = off
                         for offset in range(1, 7):
                             cand = (off + offset) % 7
@@ -185,22 +218,8 @@ def generate_roster(
                                 break
                         assigned_offs[e_id] = new_off
                         used_offs_in_pair.add(new_off)
-                        if strategy == "BALANCED" and rule == "ROTATIONAL":
-                            rotational_info[e_id] = {
-                                "start_off": new_off,
-                                "blocked": set(fixed_offs_in_pair),
-                                "bp_key": bp_key,
-                            }
                     else:
                         used_offs_in_pair.add(off)
-                        if strategy == "BALANCED" and rule == "ROTATIONAL":
-                            rotational_info[e_id] = {
-                                "start_off": off,
-                                "blocked": set(fixed_offs_in_pair),
-                                "bp_key": bp_key,
-                            }
-
-        # (COVERAGE_FIRST demand-minimizing pass already ran above)
 
         for emp in employees:
             e_id = emp["id"]
@@ -209,53 +228,153 @@ def generate_roster(
             b_id = bp_key[0] if bp_key else None
             p_id = bp_key[1] if bp_key else None
             b_name = brand_dict.get(b_id, {}).get("name", b_id) if b_id else "client"
+            eff_off = assigned_offs[e_id]
+            for d_obj in month_dates:
+                if d_obj.weekday() == eff_off:
+                    d_str = d_obj.strftime("%Y-%m-%d")
+                    emp_weekly_off_dates[e_id].add(d_str)
+                    if eff_off != pref:
+                        soft_preference_overrides.append({
+                            "employee_id": e_id,
+                            "date": d_str,
+                            "brand_id": b_id,
+                            "brand_name": b_name,
+                            "process_id": p_id,
+                            "preferred_day_name": WEEKDAY_NAMES[pref],
+                            "assigned_day_name": WEEKDAY_NAMES[eff_off],
+                        })
+    else:
+        # BALANCED: Start from preferred_weekly_off (Pareto middle ground between coverage & preference).
+        assigned_offs = {
+            emp["id"]: emp.get("preferred_weekly_off", emp.get("default_weekly_off", 6))
+            for emp in employees
+        }
 
-            if strategy == "BALANCED" and e_id in rotational_info:
-                info = rotational_info[e_id]
-                cur_off = info["start_off"]
-                blocked = info["blocked"]
-                # Step backward by 1 day per 7-day block to rotate Sunday fairness without 7-day stretch violations
-                prev_week_idx = -1
-                for d_obj in month_dates:
-                    week_idx = (d_obj.day - 1) // 7
-                    if week_idx != prev_week_idx:
-                        if prev_week_idx != -1:
-                            cand = (cur_off - 1) % 7
-                            for _ in range(7):
-                                if cand not in blocked:
-                                    break
-                                cand = (cand - 1) % 7
-                            cur_off = cand
-                        prev_week_idx = week_idx
-                    if d_obj.weekday() == cur_off:
-                        d_str = d_obj.strftime("%Y-%m-%d")
-                        emp_weekly_off_dates[e_id].add(d_str)
-                        if cur_off != pref:
-                            soft_preference_overrides.append({
-                                "employee_id": e_id,
-                                "date": d_str,
-                                "brand_id": b_id,
-                                "brand_name": b_name,
-                                "process_id": p_id,
-                                "preferred_day_name": WEEKDAY_NAMES[pref],
-                                "assigned_day_name": WEEKDAY_NAMES[cur_off],
-                            })
-            else:
-                eff_off = assigned_offs[e_id]
-                for d_obj in month_dates:
-                    if d_obj.weekday() == eff_off:
-                        d_str = d_obj.strftime("%Y-%m-%d")
-                        emp_weekly_off_dates[e_id].add(d_str)
-                        if eff_off != pref:
-                            soft_preference_overrides.append({
-                                "employee_id": e_id,
-                                "date": d_str,
-                                "brand_id": b_id,
-                                "brand_name": b_name,
-                                "process_id": p_id,
-                                "preferred_day_name": WEEKDAY_NAMES[pref],
-                                "assigned_day_name": WEEKDAY_NAMES[eff_off],
-                            })
+        # 1. Demand-relief pass: only override preferred_weekly_off when another weekday has
+        # strictly lower single-day demand without colliding, or default_weekly_off strictly
+        # reduces monthly unbacked staffing gaps (e.g. non-operating Sundays / holiday alignment).
+        for emp in employees:
+            e_id = emp["id"]
+            if not emp_primary_rules.get(e_id):
+                continue
+            pref = assigned_offs[e_id]
+            default_off = emp.get("default_weekly_off", 6)
+            peer_offs = _collect_peer_offs(e_id, primary_allocations_by_bp, assigned_offs)
+            pref_daily = _emp_weekday_demand(e_id, pref, emp_primary_rules)
+            best_daily_wd = min(
+                range(7),
+                key=lambda wd: (
+                    1 if (wd in peer_offs and wd != pref) else 0,
+                    _emp_weekday_demand(e_id, wd, emp_primary_rules),
+                    0 if wd == pref else 1,
+                    0 if wd == default_off else 1,
+                    wd,
+                ),
+            )
+            if (
+                best_daily_wd not in peer_offs
+                and _emp_weekday_demand(e_id, best_daily_wd, emp_primary_rules) < pref_daily
+            ):
+                assigned_offs[e_id] = best_daily_wd
+            elif default_off != pref and default_off not in peer_offs:
+                pref_unbacked = _emp_unbacked_monthly_demand(
+                    e_id, pref, emp_primary_rules, primary_allocations_by_bp,
+                    backup_allocations_by_bp, month_dates, ph_dates,
+                )
+                def_unbacked = _emp_unbacked_monthly_demand(
+                    e_id, default_off, emp_primary_rules, primary_allocations_by_bp,
+                    backup_allocations_by_bp, month_dates, ph_dates,
+                )
+                if def_unbacked < pref_unbacked:
+                    assigned_offs[e_id] = default_off
+
+        # 2. Multi-resource peer staggering: only stagger colliding ROTATIONAL peers onto
+        # the lowest-demand non-colliding weekday, keeping FIXED peers untouched.
+        locked_peers: Set[str] = {
+            emp["id"] for emp in employees if emp.get("weekly_off_rule", "FIXED") != "ROTATIONAL"
+        }
+        staggered_multi_emps: Set[str] = set()
+        for emp in employees:
+            e_id = emp["id"]
+            if emp.get("weekly_off_rule", "FIXED") != "ROTATIONAL":
+                continue
+            in_multi_team = any(
+                e_id in emp_ids and len(emp_ids) > 1
+                for emp_ids in primary_allocations_by_bp.values()
+            )
+            if not in_multi_team:
+                locked_peers.add(e_id)
+                continue
+
+            peer_offs = _collect_peer_offs(
+                e_id, primary_allocations_by_bp, assigned_offs, allowed_peers=locked_peers
+            )
+            if assigned_offs[e_id] in peer_offs:
+                pref = emp.get("preferred_weekly_off", emp.get("default_weekly_off", 6))
+                default_off = emp.get("default_weekly_off", 6)
+                candidates = [wd for wd in range(7) if wd not in peer_offs] or list(range(7))
+                assigned_offs[e_id] = min(
+                    candidates,
+                    key=lambda wd: (
+                        _emp_weekday_demand(e_id, wd, emp_primary_rules),
+                        0 if wd == pref else 1,
+                        0 if wd == default_off else 1,
+                        wd,
+                    ),
+                )
+                staggered_multi_emps.add(e_id)
+            locked_peers.add(e_id)
+
+        # 3. Build monthly weekly-off dates; non-staggered ROTATIONAL employees whose
+        # default_weekly_off differs from assigned_offs[e_id] open Week 1 on default_weekly_off
+        # and transition smoothly to assigned_offs[e_id] (max gap <= 6 days, 0 stretch violations).
+        for emp in employees:
+            e_id = emp["id"]
+            pref = emp.get("preferred_weekly_off", emp.get("default_weekly_off", 6))
+            default_off = emp.get("default_weekly_off", 6)
+            eff_off = assigned_offs[e_id]
+            rule = emp.get("weekly_off_rule", "FIXED")
+            has_365 = emp_has_365_rule.get(e_id, False)
+
+            bp_key = emp_primary_bp.get(e_id)
+            b_id = bp_key[0] if bp_key else None
+            p_id = bp_key[1] if bp_key else None
+            b_name = brand_dict.get(b_id, {}).get("name", b_id) if b_id else "client"
+
+            first_default_date: Optional[date] = None
+            if rule == "ROTATIONAL" and default_off != eff_off and e_id not in staggered_multi_emps:
+                peer_offs = _collect_peer_offs(e_id, primary_allocations_by_bp, assigned_offs)
+                if default_off not in peer_offs:
+                    first_default_date = next(
+                        (d_obj for d_obj in month_dates[:7] if d_obj.weekday() == default_off),
+                        None,
+                    )
+
+            for d_obj in month_dates:
+                d_str = d_obj.strftime("%Y-%m-%d")
+                if first_default_date is not None:
+                    if d_obj == first_default_date:
+                        assigned_wd = default_off
+                    elif d_obj > first_default_date and d_obj.weekday() == eff_off:
+                        assigned_wd = eff_off
+                    else:
+                        continue
+                elif d_obj.weekday() == eff_off:
+                    assigned_wd = eff_off
+                else:
+                    continue
+
+                emp_weekly_off_dates[e_id].add(d_str)
+                if assigned_wd != pref and not (d_str in ph_dates and not has_365):
+                    soft_preference_overrides.append({
+                        "employee_id": e_id,
+                        "date": d_str,
+                        "brand_id": b_id,
+                        "brand_name": b_name,
+                        "process_id": p_id,
+                        "preferred_day_name": WEEKDAY_NAMES[pref],
+                        "assigned_day_name": WEEKDAY_NAMES[assigned_wd],
+                    })
 
     # Step 2: Build Base Employee Daily Statuses
     # entries: list of dicts
@@ -683,4 +802,134 @@ def recalculate_coverage_and_validate(
         "entries": entries,
         "coverage_matrix": coverage_matrix,
         "conflicts": conflicts,
+    }
+
+
+def _conflict_key(conflict: Dict[str, Any]) -> tuple:
+    """Return the canonical identity tuple used to diff conflicts before/after a change."""
+    return (
+        conflict.get("date"),
+        conflict.get("conflict_type"),
+        conflict.get("brand_id"),
+        conflict.get("process_id"),
+        conflict.get("employee_id"),
+    )
+
+
+def preview_leave_impact(
+    month_str: str,
+    entries: List[Dict[str, Any]],
+    employee_id: str,
+    start_date: str,
+    end_date: str,
+    leave_type: str,
+    employees: List[Dict[str, Any]],
+    brands: List[Dict[str, Any]],
+    processes: List[Dict[str, Any]],
+    brand_process_rules: List[Dict[str, Any]],
+    allocations: List[Dict[str, Any]],
+    public_holidays: List[Dict[str, Any]],
+    leaves_and_compoffs: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """
+    Pure dry-run simulation of approving a leave/comp-off on an existing monthly roster.
+    Clones entries and leaves in memory without mutating any caller inputs, compares
+    coverage and HARD conflicts before vs. after, and returns affected entities and
+    ranked backup suggestions for every newly introduced hard conflict.
+    """
+    before_res = recalculate_coverage_and_validate(
+        month_str=month_str,
+        entries=entries,
+        employees=employees,
+        brands=brands,
+        processes=processes,
+        brand_process_rules=brand_process_rules,
+        allocations=allocations,
+        public_holidays=public_holidays,
+        leaves_and_compoffs=leaves_and_compoffs,
+    )
+
+    cloned_entries: List[Dict[str, Any]] = []
+    for entry in entries:
+        item = dict(entry)
+        if item["employee_id"] == employee_id and start_date <= item["date"] <= end_date:
+            item["status"] = leave_type
+            item["assigned_brand_id"] = None
+            item["assigned_process_id"] = None
+            item["is_manual_override"] = False
+        cloned_entries.append(item)
+
+    cloned_leaves = [dict(lvc) for lvc in leaves_and_compoffs]
+    cloned_leaves.append({
+        "id": "__PREVIEW__",
+        "employee_id": employee_id,
+        "start_date": start_date,
+        "end_date": end_date,
+        "type": leave_type,
+        "status": "APPROVED",
+    })
+
+    after_res = recalculate_coverage_and_validate(
+        month_str=month_str,
+        entries=cloned_entries,
+        employees=employees,
+        brands=brands,
+        processes=processes,
+        brand_process_rules=brand_process_rules,
+        allocations=allocations,
+        public_holidays=public_holidays,
+        leaves_and_compoffs=cloned_leaves,
+    )
+
+    before_hard_keys = {
+        _conflict_key(c)
+        for c in before_res["conflicts"]
+        if c.get("severity") == "HARD"
+    }
+    new_hard_conflicts = [
+        c
+        for c in after_res["conflicts"]
+        if c.get("severity") == "HARD" and _conflict_key(c) not in before_hard_keys
+    ]
+
+    brand_dict = {b["id"]: b for b in brands}
+    proc_dict = {p["id"]: p for p in processes}
+
+    affected_dates = sorted({c["date"] for c in new_hard_conflicts if c.get("date")})
+
+    affected_brands_map: Dict[str, str] = {}
+    affected_processes_set: Set[str] = set()
+    for conf in new_hard_conflicts:
+        b_id = conf.get("brand_id")
+        if b_id and b_id not in affected_brands_map:
+            affected_brands_map[b_id] = (
+                brand_dict.get(b_id, {}).get("name")
+                or conf.get("brand_name")
+                or b_id
+            )
+        p_id = conf.get("process_id")
+        if p_id:
+            proc_label = (
+                proc_dict.get(p_id, {}).get("code")
+                or proc_dict.get(p_id, {}).get("name")
+                or conf.get("process_name")
+                or p_id
+            )
+            affected_processes_set.add(proc_label)
+
+    affected_brands = [
+        {"brand_id": b_id, "brand_name": b_name}
+        for b_id, b_name in sorted(affected_brands_map.items(), key=lambda item: item[0])
+    ]
+
+    return {
+        "hard_conflicts_before": before_res["kpis"]["hard_conflicts_count"],
+        "hard_conflicts_after": after_res["kpis"]["hard_conflicts_count"],
+        "new_hard_conflicts_count": len(new_hard_conflicts),
+        "coverage_before": float(before_res["kpis"]["coverage_percentage"]),
+        "coverage_after": float(after_res["kpis"]["coverage_percentage"]),
+        "affected_dates": affected_dates,
+        "affected_brands": affected_brands,
+        "affected_processes": sorted(affected_processes_set),
+        "new_conflicts": new_hard_conflicts,
     }

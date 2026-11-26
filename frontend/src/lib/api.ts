@@ -262,6 +262,47 @@ export interface ExplainConflictResponse {
   provider: string;
 }
 
+export interface AutoResolveResponse {
+  resolved_count: number;
+  remaining_hard_conflicts: number;
+  coverage_before: number;
+  coverage_after: number;
+  structural_gaps_summary: string;
+  roster: MonthlyRosterResponse;
+}
+
+export interface LeaveImpactPreviewResponse {
+  hard_conflicts_before: number;
+  hard_conflicts_after: number;
+  new_hard_conflicts_count: number;
+  coverage_before: number;
+  coverage_after: number;
+  affected_dates: string[];
+  affected_brands: { brand_id: string; brand_name: string }[];
+  affected_processes: string[];
+  new_conflicts: Conflict[];
+}
+
+export interface BottleneckPodItem {
+  pod_id: string;
+  pod_name: string;
+  hard_conflicts_count: number;
+}
+
+export interface BottleneckBrandItem {
+  brand_id: string;
+  brand_name: string;
+  pod_id: string;
+  hard_conflicts_count: number;
+}
+
+export interface BottlenecksResponse {
+  total_hard_conflicts: number;
+  top_pods: BottleneckPodItem[];
+  top_brands: BottleneckBrandItem[];
+  recommendations: string[];
+}
+
 // ─── HTTP Helper ──────────────────────────────────────────────────────────────
 
 function formatApiError(detail: unknown, fallback: string): string {
@@ -512,7 +553,9 @@ export async function explainConflict(
     date: conflict.date,
     conflict_type: conflict.conflict_type,
     severity: conflict.severity,
+    brand_id: conflict.brand_id ?? null,
     brand_name: conflict.brand_name ?? null,
+    process_id: conflict.process_id ?? null,
     process_name: conflict.process_name ?? null,
     employee_name: conflict.employee_name ?? null,
     message: conflict.message,
@@ -528,6 +571,19 @@ export async function explainConflict(
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export async function autoResolveGaps(
+  month: string,
+  minScore: number = 70
+): Promise<AutoResolveResponse> {
+  return request(`/api/rosters/${encodeURIComponent(month)}/auto-resolve?min_score=${minScore}`, {
+    method: "POST",
+  });
+}
+
+export async function fetchBottlenecks(month: string): Promise<BottlenecksResponse> {
+  return request(`/api/rosters/${encodeURIComponent(month)}/bottlenecks`);
 }
 
 // ─── Pods CRUD ────────────────────────────────────────────────────────────────
@@ -610,4 +666,19 @@ export const approveLeave = (leaveId: string, month: string = "2026-12"): Promis
 export const rejectLeave = (leaveId: string): Promise<LeaveAndCompOff> =>
   request(`/api/leaves/${encodeURIComponent(leaveId)}/reject`, {
     method: "POST",
+  });
+export const previewLeaveImpact = (
+  leaveId: string,
+  month: string = "2026-12"
+): Promise<LeaveImpactPreviewResponse> =>
+  request(`/api/leaves/${encodeURIComponent(leaveId)}/preview-impact?month=${encodeURIComponent(month)}`, {
+    method: "POST",
+  });
+export const previewAdhocLeaveImpact = (
+  payload: { employee_id: string; start_date: string; end_date: string; type?: string },
+  month: string = "2026-12"
+): Promise<LeaveImpactPreviewResponse> =>
+  request(`/api/leaves/preview-impact?month=${encodeURIComponent(month)}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
   });

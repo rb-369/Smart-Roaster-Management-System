@@ -13,6 +13,8 @@ import {
   XCircle,
   X,
   Loader2,
+  Eye,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Allocation,
@@ -20,6 +22,7 @@ import {
   BrandProcessRule,
   Employee,
   LeaveAndCompOff,
+  LeaveImpactPreviewResponse,
   MonthlyRosterResponse,
   Pod,
   Process,
@@ -43,6 +46,7 @@ import {
   deletePod,
   deleteRule,
   fetchMonthlyRoster,
+  previewAdhocLeaveImpact,
   rejectLeave,
   updateBrand,
   updateEmployee,
@@ -130,6 +134,38 @@ export default function ManagementTabs({
     status: "APPROVED",
     reason: "",
   });
+  const [leavePreview, setLeavePreview] = useState<LeaveImpactPreviewResponse | null>(null);
+  const [leavePreviewBusy, setLeavePreviewBusy] = useState(false);
+  const [leavePreviewError, setLeavePreviewError] = useState<string | null>(null);
+
+  const effectiveLeaveEmployeeId = newLeave.employee_id || employees[0]?.id || "";
+  const canPreviewAdhocLeave = Boolean(
+    effectiveLeaveEmployeeId && newLeave.start_date && newLeave.end_date
+  );
+
+  const handlePreviewAdhocLeave = async () => {
+    if (!canPreviewAdhocLeave) return;
+    try {
+      setLeavePreviewBusy(true);
+      setLeavePreviewError(null);
+      const res = await previewAdhocLeaveImpact(
+        {
+          employee_id: effectiveLeaveEmployeeId,
+          start_date: newLeave.start_date,
+          end_date: newLeave.end_date,
+          type: newLeave.type,
+        },
+        month
+      );
+      setLeavePreview(res);
+    } catch (err: unknown) {
+      setLeavePreviewError(
+        err instanceof Error ? err.message : "Failed to preview roster impact"
+      );
+    } finally {
+      setLeavePreviewBusy(false);
+    }
+  };
 
   // ── Holiday Form State ──
   const [newHoliday, setNewHoliday] = useState<PublicHoliday>({
@@ -708,66 +744,241 @@ export default function ManagementTabs({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Leaves (2 cols) */}
           <div className="lg:col-span-2 space-y-4">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const id = newLeave.id.trim() || `LV-${Date.now()}`;
-                runAction(() => createLeave({ ...newLeave, id }), `Added leave ${id}`);
-              }}
-              className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm grid grid-cols-2 sm:grid-cols-6 gap-2.5 items-end"
-            >
-              <div className="col-span-2">
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Employee</label>
-                <select
-                  value={newLeave.employee_id}
-                  onChange={(e) => setNewLeave({ ...newLeave, employee_id: e.target.value })}
-                  className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
-                >
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.name} ({emp.id})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Start</label>
-                <input
-                  type="date"
-                  value={newLeave.start_date}
-                  onChange={(e) => setNewLeave({ ...newLeave, start_date: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">End</label>
-                <input
-                  type="date"
-                  value={newLeave.end_date}
-                  onChange={(e) => setNewLeave({ ...newLeave, end_date: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Type</label>
-                <select
-                  value={newLeave.type}
-                  onChange={(e) => setNewLeave({ ...newLeave, type: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
-                >
-                  <option value="PLANNED_LEAVE">PLANNED_LEAVE</option>
-                  <option value="COMP_OFF">COMP_OFF</option>
-                </select>
-              </div>
-              <button
-                type="submit"
-                disabled={busy}
-                className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold"
+            <div className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm space-y-3">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const id = newLeave.id.trim() || `LV-${Date.now()}`;
+                  runAction(
+                    () =>
+                      createLeave({
+                        ...newLeave,
+                        id,
+                        employee_id: effectiveLeaveEmployeeId,
+                      }),
+                    `Added leave ${id}`
+                  ).then(() => {
+                    setLeavePreview(null);
+                    setLeavePreviewError(null);
+                  });
+                }}
+                className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 items-end"
               >
-                <Plus className="w-3.5 h-3.5" />
-                Add
-              </button>
-            </form>
+                <div className="col-span-2">
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Employee</label>
+                  <select
+                    value={effectiveLeaveEmployeeId}
+                    onChange={(e) => {
+                      setNewLeave({ ...newLeave, employee_id: e.target.value });
+                      setLeavePreview(null);
+                      setLeavePreviewError(null);
+                    }}
+                    className="w-full px-2.5 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
+                  >
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} ({emp.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Start</label>
+                  <input
+                    type="date"
+                    value={newLeave.start_date}
+                    onChange={(e) => {
+                      setNewLeave({ ...newLeave, start_date: e.target.value });
+                      setLeavePreview(null);
+                      setLeavePreviewError(null);
+                    }}
+                    className="w-full px-2 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">End</label>
+                  <input
+                    type="date"
+                    value={newLeave.end_date}
+                    onChange={(e) => {
+                      setNewLeave({ ...newLeave, end_date: e.target.value });
+                      setLeavePreview(null);
+                      setLeavePreviewError(null);
+                    }}
+                    className="w-full px-2 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Type</label>
+                  <select
+                    value={newLeave.type}
+                    onChange={(e) => {
+                      setNewLeave({ ...newLeave, type: e.target.value });
+                      setLeavePreview(null);
+                      setLeavePreviewError(null);
+                    }}
+                    className="w-full px-2 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg"
+                  >
+                    <option value="PLANNED_LEAVE">PLANNED_LEAVE</option>
+                    <option value="COMP_OFF">COMP_OFF</option>
+                  </select>
+                </div>
+                <div className="col-span-2 sm:col-span-6 flex flex-wrap items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={!canPreviewAdhocLeave || leavePreviewBusy || busy}
+                    onClick={handlePreviewAdhocLeave}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white hover:bg-neutral-100 disabled:opacity-50 border border-neutral-300 text-neutral-800 text-xs font-semibold transition-colors"
+                  >
+                    {leavePreviewBusy ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
+                    {leavePreviewBusy ? "Previewing..." : "Preview Roster Impact"}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 text-white text-xs font-semibold"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add
+                  </button>
+                </div>
+              </form>
+
+              {leavePreviewError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-800 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between">
+                  <span>{leavePreviewError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setLeavePreviewError(null)}
+                    className="text-rose-600 hover:text-rose-800"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {leavePreview && (
+                <div className="bg-neutral-50 border border-amber-200 rounded-xl p-3 space-y-2 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 font-bold text-neutral-900">
+                        <ShieldAlert
+                          className={`w-3.5 h-3.5 ${
+                            leavePreview.new_hard_conflicts_count > 0
+                              ? "text-rose-600"
+                              : "text-emerald-600"
+                          }`}
+                        />
+                        What-If Impact Summary
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                          leavePreview.new_hard_conflicts_count > 0
+                            ? "bg-rose-50 text-rose-700 border border-rose-200"
+                            : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        }`}
+                      >
+                        +{leavePreview.new_hard_conflicts_count} hard conflict
+                        {leavePreview.new_hard_conflicts_count === 1 ? "" : "s"} (
+                        {leavePreview.hard_conflicts_before} → {leavePreview.hard_conflicts_after})
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white border border-neutral-200 text-neutral-800">
+                        Coverage: {leavePreview.coverage_before.toFixed(1)}% →{" "}
+                        {leavePreview.coverage_after.toFixed(1)}%
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLeavePreview(null)}
+                      className="p-1 text-neutral-400 hover:text-neutral-700"
+                      title="Close preview"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-neutral-600">
+                    <div>
+                      <span className="font-semibold text-neutral-800">Affected Brands: </span>
+                      {leavePreview.affected_brands.length > 0
+                        ? leavePreview.affected_brands.map((b) => b.brand_name).join(", ")
+                        : "None"}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-neutral-800">Affected Processes: </span>
+                      {leavePreview.affected_processes.length > 0
+                        ? leavePreview.affected_processes.join(", ")
+                        : "None"}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-neutral-800">Affected Dates: </span>
+                      {leavePreview.affected_dates.length > 0
+                        ? leavePreview.affected_dates.join(", ")
+                        : "None"}
+                    </div>
+                  </div>
+
+                  {leavePreview.new_conflicts.length > 0 ? (
+                    <div className="space-y-1.5 pt-1 border-t border-neutral-200/70">
+                      <div className="text-[11px] font-semibold text-neutral-700">
+                        New Coverage Gaps &amp; Top Backup Candidates ({leavePreview.new_conflicts.length})
+                      </div>
+                      <div className="space-y-1.5">
+                        {leavePreview.new_conflicts.map((c, idx) => {
+                          const topBackup = c.suggested_resolutions?.[0];
+                          return (
+                            <div
+                              key={`${c.date}-${c.brand_id ?? ""}-${c.process_id ?? ""}-${idx}`}
+                              className="bg-white border border-neutral-200 rounded-lg px-2.5 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px]"
+                            >
+                              <div className="text-neutral-800">
+                                <span
+                                  className={`inline-block px-1.5 py-0.5 rounded font-semibold mr-1.5 ${
+                                    c.severity === "HARD"
+                                      ? "bg-rose-100 text-rose-700"
+                                      : "bg-amber-100 text-amber-800"
+                                  }`}
+                                >
+                                  {c.severity}
+                                </span>
+                                <span className="font-mono text-neutral-700 mr-1.5">{c.date}</span>
+                                <span className="font-semibold">
+                                  {c.brand_name || c.brand_id || "—"}
+                                  {c.process_name || c.process_id
+                                    ? ` / ${c.process_name || c.process_id}`
+                                    : ""}
+                                </span>
+                                <span className="text-neutral-500 ml-1.5">{c.message}</span>
+                              </div>
+                              <div className="text-neutral-700 sm:text-right flex-shrink-0">
+                                {topBackup ? (
+                                  <span className="inline-flex items-center gap-1 bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded-full font-medium">
+                                    Top Backup: {topBackup.name} ({topBackup.employee_id}) &middot;
+                                    Score {topBackup.score}
+                                  </span>
+                                ) : (
+                                  <span className="text-neutral-400 italic">
+                                    No backup candidate available
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-emerald-700 font-medium pt-1 border-t border-neutral-200/70">
+                      No new coverage gaps detected for this leave window.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-neutral-200 bg-neutral-50">
