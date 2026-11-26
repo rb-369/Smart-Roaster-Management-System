@@ -29,7 +29,7 @@ app = FastAPI(
 # CORS configuration
 origins_env = os.environ.get(
     "CORS_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:3000,https://roaster-management1.vercel.app",
+    "http://localhost:3000,http://127.0.0.1:3000,https://roster-management1.vercel.app,https://roaster-management1.vercel.app",
 )
 allow_origins = [orig.strip().rstrip("/") for orig in origins_env.split(",") if orig.strip()]
 

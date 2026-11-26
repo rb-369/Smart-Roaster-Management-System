@@ -2,6 +2,9 @@
 
 > Built for the **Datastraw Tech Internship Assessment Test**.
 >
+> **Live Demo**: [https://roster-management1.vercel.app/](https://roster-management1.vercel.app/)  
+> **Repository**: [https://github.com/rb-369/Smart-Roster-Management-System](https://github.com/rb-369/Smart-Roster-Management-System)  
+>
 > **Core Principle**: Reliable deterministic scheduling logic, explicit hard vs. soft conflict detection, and live post-generation change impact over unnecessary visual bloat.
 
 ---
