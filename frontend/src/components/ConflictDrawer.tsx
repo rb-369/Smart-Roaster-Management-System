@@ -49,15 +49,18 @@ export default function ConflictDrawer({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [explainingKey, setExplainingKey] = useState<string | null>(null);
   const [explanations, setExplanations] = useState<Record<string, ExplainConflictResponse>>({});
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitialSeverity, setPrevInitialSeverity] = useState(initialSeverity);
 
-  // Sync filter when opened with a specific severity
-  React.useEffect(() => {
+  if (open !== prevOpen || initialSeverity !== prevInitialSeverity) {
+    setPrevOpen(open);
+    setPrevInitialSeverity(initialSeverity);
     if (open) {
       setSeverityFilter(initialSeverity);
     } else {
       setAutoResolveResult(null);
     }
-  }, [open, initialSeverity]);
+  }
 
   const hardCount = useMemo(
     () => conflicts.filter((c) => c.severity === "HARD").length,

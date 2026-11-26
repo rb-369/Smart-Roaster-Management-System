@@ -93,6 +93,7 @@ export default function RosterCopilot({
   const [selectedIdx, setSelectedIdx] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const msgCounterRef = useRef(0);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -147,10 +148,6 @@ export default function RosterCopilot({
       }));
   }, [activeTrigger, employees, brands]);
 
-  useEffect(() => {
-    setSelectedIdx(0);
-  }, [activeTrigger?.triggerChar, activeTrigger?.query]);
-
   const applySuggestion = (s: TagSuggestion) => {
     if (!activeTrigger) return;
     const prefix = input.slice(0, activeTrigger.triggerStart);
@@ -169,7 +166,7 @@ export default function RosterCopilot({
     }));
 
     const userMsg: CopilotEntry = {
-      id: `user-${Date.now()}`,
+      id: `user-${++msgCounterRef.current}`,
       role: "user",
       content: text,
     };
@@ -182,7 +179,7 @@ export default function RosterCopilot({
     try {
       const res = await sendAssistantChat(month, text, historyPayload);
       const botMsg: CopilotEntry = {
-        id: `bot-${Date.now()}`,
+        id: `bot-${++msgCounterRef.current}`,
         role: "assistant",
         content: res.reply,
         source: res.source,
@@ -360,7 +357,10 @@ export default function RosterCopilot({
               ref={inputRef}
               type="text"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setSelectedIdx(0);
+              }}
               onKeyDown={(e) => {
                 if (!activeTrigger || suggestions.length === 0) return;
                 if (e.key === "ArrowDown") {

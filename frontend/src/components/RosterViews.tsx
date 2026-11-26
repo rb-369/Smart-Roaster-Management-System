@@ -168,17 +168,6 @@ export default function RosterViews({
   const [savingOverride, setSavingOverride] = useState(false);
   const [overrideError, setOverrideError] = useState<string | null>(null);
 
-  // Ensure default selections remain valid
-  React.useEffect(() => {
-    if (!selectedPodId && pods.length > 0) setSelectedPodId(pods[0].id);
-  }, [pods, selectedPodId]);
-
-  React.useEffect(() => {
-    if (selectedProcessId === "ALL" && processes.length > 0) {
-      setSelectedProcessId(processes[0].id);
-    }
-  }, [processes, selectedProcessId]);
-
   const dates = useMemo(() => getMonthDates(month), [month]);
   const holidayMap = useMemo(
     () => new Map(holidays.map((h) => [h.date, h])),

@@ -781,6 +781,8 @@ async def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequ
                         json={
                             "model": model_name,
                             "messages": [{"role": "user", "content": prompt}],
+                            "reasoning": {"effort": "low"},
+                            "max_tokens": 500,
                             "temperature": 0.2,
                         },
                     )
@@ -799,7 +801,7 @@ async def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequ
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
                 resp = await client.post(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}",
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}",
                     headers={"Content-Type": "application/json"},
                     json={"contents": [{"parts": [{"text": prompt}]}]},
                 )
@@ -807,38 +809,12 @@ async def _resolve_conflict_explanation(month: str, payload: ExplainConflictRequ
                     content = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
                     parsed = _parse_ai_json_response(content)
                     if parsed:
-                        parsed["provider"] = "Gemini (gemini-2.0-flash)"
+                        parsed["provider"] = "Gemini (gemini-2.5-flash)"
                         return parsed
         except (httpx.TimeoutException, Exception):
             pass
 
-    # 3. NVIDIA NIM
-    nvidia_key = os.environ.get("NVIDIA_API_KEY", "").strip()
-    if nvidia_key:
-        try:
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                resp = await client.post(
-                    "https://integrate.api.nvidia.com/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {nvidia_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": "nvidia/llama-3.1-nemotron-70b-instruct",
-                        "messages": [{"role": "user", "content": prompt}],
-                        "temperature": 0.2,
-                    },
-                )
-                if resp.status_code == 200:
-                    content = resp.json()["choices"][0]["message"]["content"]
-                    parsed = _parse_ai_json_response(content)
-                    if parsed:
-                        parsed["provider"] = "NVIDIA NIM (llama-3.1-nemotron-70b-instruct)"
-                        return parsed
-        except (httpx.TimeoutException, Exception):
-            pass
-
-    # 4. Deterministic Fallback
+    # 3. Deterministic Fallback
     return _deterministic_explain(payload)
 
 

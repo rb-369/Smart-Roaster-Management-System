@@ -86,14 +86,16 @@ export default function ManagementTabs({
   onRosterUpdated,
 }: ManagementTabsProps) {
   const [subTab, setSubTab] = useState<ManagementSubTab>(initialSubTab);
+  const [prevInitialSubTab, setPrevInitialSubTab] = useState<ManagementSubTab>(initialSubTab);
   const [busy, setBusy] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  if (initialSubTab !== prevInitialSubTab) {
+    setPrevInitialSubTab(initialSubTab);
     setSubTab(initialSubTab);
-  }, [initialSubTab]);
+  }
 
   const empMap = new Map(employees.map((e) => [e.id, e]));
   const podMap = new Map(pods.map((p) => [p.id, p]));
