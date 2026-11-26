@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   X,
 } from "lucide-react";
+import RosterCopilot from "@/components/RosterCopilot";
 import {
   Allocation,
   BottlenecksResponse,
@@ -833,6 +834,8 @@ export default function HomePage() {
           </div>
         </div>
       )}
+      {/* Read-Only Roster Copilot */}
+      <RosterCopilot month={month} />
     </div>
   );
 }

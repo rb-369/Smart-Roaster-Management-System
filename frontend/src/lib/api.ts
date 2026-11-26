@@ -717,3 +717,43 @@ export const previewAdhocLeaveImpact = (
     method: "POST",
     body: JSON.stringify(payload),
   });
+
+// ─── Read-Only Roster Copilot Assistant ───────────────────────────────────────
+
+export interface AssistantChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AssistantChatResponse {
+  month: string;
+  reply: string;
+  source: "ai" | "deterministic_fallback";
+  provider?: string | null;
+}
+
+export async function sendAssistantChat(
+  month: string,
+  message: string,
+  history: AssistantChatMessage[] = []
+): Promise<AssistantChatResponse> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/assistant/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ month, message, history }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(
+        formatApiError(errorData.detail, `Copilot request failed (${res.status})`)
+      );
+    }
+    return (await res.json()) as AssistantChatResponse;
+  } finally {
+    clearTimeout(timer);
+  }
+}

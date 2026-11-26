@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from database import init_db, engine
 from models import Employee
 from seed import seed_database
-from routers import entities, leaves, rosters
+from routers import assistant, entities, leaves, rosters
 
 
 @asynccontextmanager
@@ -47,6 +47,7 @@ app.include_router(rosters.notifications_router)
 app.include_router(rosters.router)
 app.include_router(entities.router)
 app.include_router(leaves.router)
+app.include_router(assistant.router)
 
 
 @app.get("/api/health", tags=["Health"])
