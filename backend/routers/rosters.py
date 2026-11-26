@@ -93,7 +93,7 @@ STATUS_CODE_MAP = {
     "PUBLIC_HOLIDAY": "PH",
     "PLANNED_LEAVE": "LV",
     "COMP_OFF": "CO",
-    "BACKUP_COVERAGE": "BK",
+    "BACKUP_COVERAGE": "BC",
 }
 
 

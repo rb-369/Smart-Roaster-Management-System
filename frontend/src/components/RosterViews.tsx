@@ -74,7 +74,7 @@ const STATUS_META: Record<
     badgeClass: "bg-purple-600 text-white border-purple-700 font-semibold hover:bg-purple-700",
   },
   BACKUP_COVERAGE: {
-    code: "BK",
+    code: "BC",
     label: "Backup Coverage",
     badgeClass: "bg-teal-600 text-white border-teal-700 font-semibold hover:bg-teal-700",
   },
@@ -118,7 +118,7 @@ function renderCoverageBadge(cov?: DailyCoverage) {
     case "BACKUP_COVERED":
       return (
         <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-teal-50 text-teal-800 border border-teal-200 tabular-nums whitespace-nowrap">
-          {ratio} BK
+          {ratio} BC
         </span>
       );
     case "UNDERSTAFFED":
@@ -698,7 +698,7 @@ export default function RosterViews({
                 1/1 COVERED
               </span>
               <span className="px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200 font-semibold">
-                1/1 BK BACKUP
+                1/1 BC BACKUP
               </span>
               <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 font-semibold">
                 1/2 SHORT
@@ -932,7 +932,7 @@ export default function RosterViews({
                 PH: empEntries.filter((x) => x.entry?.status === "PUBLIC_HOLIDAY").length,
                 LV: empEntries.filter((x) => x.entry?.status === "PLANNED_LEAVE").length,
                 CO: empEntries.filter((x) => x.entry?.status === "COMP_OFF").length,
-                BK: empEntries.filter((x) => x.entry?.status === "BACKUP_COVERAGE").length,
+                BC: empEntries.filter((x) => x.entry?.status === "BACKUP_COVERAGE").length,
               };
               const sundayOffs = empEntries.filter(
                 (x) => getPythonWeekday(x.date) === 6 && x.entry?.status === "WEEKLY_OFF"
@@ -1013,8 +1013,8 @@ export default function RosterViews({
                       <div className="text-[10px] text-purple-100">CO</div>
                     </div>
                     <div className="bg-teal-600 border border-teal-700 rounded-lg py-1 text-white">
-                      <div className="font-bold">{counts.BK}</div>
-                      <div className="text-[10px] text-teal-100">BK</div>
+                      <div className="font-bold">{counts.BC}</div>
+                      <div className="text-[10px] text-teal-100">BC</div>
                     </div>
                     <div className="bg-slate-100 border border-slate-300 rounded-lg py-1">
                       <div className="font-bold text-slate-900">{sundayOffs}</div>

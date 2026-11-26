@@ -31,7 +31,7 @@ const SCENARIOS = [
     badge: "Smart Backup",
     icon: Users,
     description:
-      "Check BRD-18 (StrideCraft Footwear) during EMP-16's leave: Tue Dec 15 (min=1) stays covered 1/1, while busy Mon Dec 14 (min=2) automatically activates backup EMP-18 (2/2 BK).",
+      "Check BRD-18 (StrideCraft Footwear) during EMP-16's leave: Tue Dec 15 (min=1) stays covered 1/1, while busy Mon Dec 14 (min=2) automatically activates backup EMP-18 (2/2 BC).",
   },
   {
     num: 4,
@@ -139,7 +139,7 @@ export default function EvaluatorGuideModal({ open, onClose }: EvaluatorGuideMod
               <span className="font-mono font-semibold">PH</span> Public Holiday ·{" "}
               <span className="font-mono font-semibold">LV</span> Leave ·{" "}
               <span className="font-mono font-semibold">CO</span> Comp-Off ·{" "}
-              <span className="font-mono font-semibold">BK</span> Backup. Click any matrix cell to
+              <span className="font-mono font-semibold">BC</span> Backup Coverage. Click any matrix cell to
               test live manual overrides, try <strong>Compare Plans</strong> or{" "}
               <strong>Roster Copilot</strong>, and click <strong>Reset Demo</strong> anytime to
               restore clean seed data.
