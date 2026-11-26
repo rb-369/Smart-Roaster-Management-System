@@ -340,6 +340,11 @@ export default function RosterViews({
                 const theme = podThemes[gIdx % podThemes.length];
                 return (
                 <React.Fragment key={grp.pod?.id || `grp-${gIdx}`}>
+                  {gIdx > 0 && grp.pod && (
+                    <tr aria-hidden="true" className="h-4 bg-[#FAFAFC]">
+                      <td colSpan={dates.length + 1} className="p-0 border-y border-neutral-200" />
+                    </tr>
+                  )}
                   {grp.pod && (
                     <tr className={`${theme.headerBg} border-t-2 border-b border-neutral-300`}>
                       <td
